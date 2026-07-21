@@ -42,7 +42,7 @@ func TestBoard_EmptyRendersAllColumns(t *testing.T) {
 
 	body := string(raw)
 
-	for _, stage := range []string{"Evaluated", "Applied", "Screening", "Interviewing", "Final Round", "Offer"} {
+	for _, stage := range []string{"Evaluated", "Applied", "AI Assessment", "Screening", "Interviewing", "Final Round", "Offer"} {
 		if !strings.Contains(body, stage) {
 			t.Errorf("board missing column %q", stage)
 		}
