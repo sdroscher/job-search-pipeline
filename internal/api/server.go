@@ -80,19 +80,6 @@ func (s *Server) jobRoutes(r chi.Router) {
 	})
 }
 
-// Stub handlers — replaced in later tasks.
-func (s *Server) handleCreateActivity(w http.ResponseWriter, _ *http.Request) {
-	w.WriteHeader(http.StatusOK)
-}
-
-func (s *Server) handleListArtifacts(w http.ResponseWriter, _ *http.Request) {
-	w.WriteHeader(http.StatusOK)
-}
-
-func (s *Server) handleCreateArtifact(w http.ResponseWriter, _ *http.Request) {
-	w.WriteHeader(http.StatusOK)
-}
-
 func (s *Server) handleBoardPanel(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }

@@ -29,7 +29,7 @@ var stageColors = map[string]string{
 	"Offer":         "stage-offer",
 }
 
-func Board(jobsByStage map[string][]db.Job) templ.Component {
+func Board(jobsByStage map[string][]db.Job, staleJobs map[string]bool) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -55,7 +55,7 @@ func Board(jobsByStage map[string][]db.Job) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		for _, stage := range activeStages {
-			templ_7745c5c3_Err = Column(stage, jobsByStage[stage]).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = Column(stage, jobsByStage[stage], staleJobs).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -68,7 +68,7 @@ func Board(jobsByStage map[string][]db.Job) templ.Component {
 	})
 }
 
-func Column(stage string, jobs []db.Job) templ.Component {
+func Column(stage string, jobs []db.Job, staleJobs map[string]bool) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -161,7 +161,7 @@ func Column(stage string, jobs []db.Job) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		for _, job := range jobs {
-			templ_7745c5c3_Err = JobCard(job, false).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = JobCard(job, staleJobs[job.ID]).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -275,7 +275,7 @@ func JobCard(job db.Job, stale bool) templ.Component {
 	})
 }
 
-func IndexPage(jobsByStage map[string][]db.Job) templ.Component {
+func IndexPage(jobsByStage map[string][]db.Job, staleJobs map[string]bool) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -308,7 +308,7 @@ func IndexPage(jobsByStage map[string][]db.Job) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = Board(jobsByStage).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = Board(jobsByStage, staleJobs).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

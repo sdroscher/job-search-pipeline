@@ -86,15 +86,27 @@ func (h *JobPanelHandler) HandleUpdateStage(w http.ResponseWriter, r *http.Reque
 	}
 
 	colJobs := make([]db.Job, 0)
-	for _, j := range jobs {
-		if j.Stage == stage {
-			colJobs = append(colJobs, j)
+	for _, job := range jobs {
+		if job.Stage == stage {
+			colJobs = append(colJobs, job)
+		}
+	}
+
+	staleJobs := make(map[string]bool)
+	for _, job := range colJobs {
+		artifacts, _ := h.store.ListArtifacts(r.Context(), job.ID)
+		for _, artifact := range artifacts {
+			if artifact.Stale == 1 {
+				staleJobs[job.ID] = true
+
+				break
+			}
 		}
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
-	err = ui.Column(stage, colJobs).Render(r.Context(), w)
+	err = ui.Column(stage, colJobs, staleJobs).Render(r.Context(), w)
 	if err != nil {
 		log.Printf("render column: %v", err)
 	}

@@ -21,10 +21,10 @@ var stageColors = map[string]string{
 	"Offer":         "stage-offer",
 }
 
-templ Board(jobsByStage map[string][]db.Job) {
+templ Board(jobsByStage map[string][]db.Job, staleJobs map[string]bool) {
 	<div id="board" class="board">
 		for _, stage := range activeStages {
-			@Column(stage, jobsByStage[stage])
+			@Column(stage, jobsByStage[stage], staleJobs)
 		}
 	</div>
 	<script>
@@ -45,7 +45,7 @@ templ Board(jobsByStage map[string][]db.Job) {
 	</script>
 }
 
-templ Column(stage string, jobs []db.Job) {
+templ Column(stage string, jobs []db.Job, staleJobs map[string]bool) {
 	<div class={ "column", stageColors[stage] }>
 		<div class="column-header">
 			<span class="column-title">{ stage }</span>
@@ -55,7 +55,7 @@ templ Column(stage string, jobs []db.Job) {
 		</div>
 		<div class="column-cards" data-stage={ stage }>
 			for _, job := range jobs {
-				@JobCard(job, false)
+				@JobCard(job, staleJobs[job.ID])
 			}
 		</div>
 	</div>
@@ -83,9 +83,9 @@ templ JobCard(job db.Job, stale bool) {
 	</div>
 }
 
-templ IndexPage(jobsByStage map[string][]db.Job) {
+templ IndexPage(jobsByStage map[string][]db.Job, staleJobs map[string]bool) {
 	@Page("Board") {
-		@Board(jobsByStage)
+		@Board(jobsByStage, staleJobs)
 		<div id="detail-panel" class="detail-panel"></div>
 	}
 }
