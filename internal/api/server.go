@@ -81,14 +81,6 @@ func (s *Server) jobRoutes(r chi.Router) {
 }
 
 // Stub handlers — replaced in later tasks.
-func (s *Server) handleGetProfile(w http.ResponseWriter, _ *http.Request) {
-	w.WriteHeader(http.StatusOK)
-}
-
-func (s *Server) handlePutProfile(w http.ResponseWriter, _ *http.Request) {
-	w.WriteHeader(http.StatusOK)
-}
-
 func (s *Server) handleCreateActivity(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
