@@ -65,4 +65,10 @@ func TestUpdateStage_ViaHTMX(t *testing.T) {
 	job, err := store.GetJob(context.Background(), "test-job")
 	require.NoError(t, err)
 	assert.Equal(t, "Applied", job.Stage, "stage not updated")
+
+	// Verify response body contains updated column HTML with the moved job's company name
+	raw, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	assert.NotEmpty(t, raw, "response body should be non-empty column HTML")
+	assert.Contains(t, string(raw), "TestCo", "column HTML should contain moved job's company name")
 }

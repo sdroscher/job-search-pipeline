@@ -160,3 +160,22 @@ func TestGetJob_NotFound(t *testing.T) {
 
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 }
+
+func TestUpdateJob_NotFound(t *testing.T) {
+	ts, _ := newServer(t)
+
+	body, err := json.Marshal(map[string]any{"stage": "Applied"})
+	require.NoError(t, err)
+
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPatch, ts.URL+"/api/jobs/nonexistent", bytes.NewReader(body))
+	require.NoError(t, err)
+
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+}

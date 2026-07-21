@@ -1,7 +1,9 @@
 package api
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"time"
@@ -135,11 +137,14 @@ func (s *Server) handleCreateJob(w http.ResponseWriter, r *http.Request) {
 
 	// Create an initial activity log entry.
 	now := time.Now().UTC().Truncate(24 * time.Hour)
-	_, _ = s.store.CreateActivityEntry(r.Context(), db.CreateActivityEntryParams{
+	_, actErr := s.store.CreateActivityEntry(r.Context(), db.CreateActivityEntryParams{
 		JobID:  job.ID,
 		Date:   now,
 		Action: "Added",
 	})
+	if actErr != nil {
+		log.Printf("create activity entry for %s: %v", job.ID, actErr)
+	}
 
 	writeJSON(w, http.StatusCreated, job)
 }
@@ -149,7 +154,11 @@ func (s *Server) handleGetJob(w http.ResponseWriter, r *http.Request) {
 
 	job, err := s.store.GetJob(r.Context(), id)
 	if err != nil {
-		http.Error(w, "not found", http.StatusNotFound)
+		if errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "not found", http.StatusNotFound)
+		} else {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 
 		return
 	}
@@ -173,7 +182,11 @@ func (s *Server) handleUpdateJob(w http.ResponseWriter, r *http.Request) {
 
 	job, err := s.store.UpdateJob(r.Context(), params)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		if errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "not found", http.StatusNotFound)
+		} else {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 
 		return
 	}

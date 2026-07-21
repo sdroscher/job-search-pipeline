@@ -1,6 +1,8 @@
 package panels
 
 import (
+	"database/sql"
+	"errors"
 	"log"
 	"net/http"
 
@@ -32,12 +34,16 @@ func (h *JobPanelHandler) HandleDetail(w http.ResponseWriter, r *http.Request) {
 
 	activity, err := h.store.ListActivityLog(r.Context(), id)
 	if err != nil {
-		log.Printf("list activity log failed: %v (id=%q)", err, id) // #nosec G706
+		log.Printf("list activity log failed: %v (id=%q)", err, id) //nolint:gosec
 		activity = []db.ActivityLog{}
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_ = ui.DetailPanel(job, activity).Render(r.Context(), w)
+
+	err = ui.DetailPanel(job, activity).Render(r.Context(), w)
+	if err != nil {
+		log.Printf("render detail panel: %v", err)
+	}
 }
 
 // HandleUpdateStage updates the stage of a job via a form POST.
@@ -62,10 +68,34 @@ func (h *JobPanelHandler) HandleUpdateStage(w http.ResponseWriter, r *http.Reque
 
 	_, err = h.store.UpdateJob(r.Context(), db.UpdateJobParams{ID: id, Stage: &stage})
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "not found", http.StatusNotFound)
+		} else {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+
+		return
+	}
+
+	// Return updated column HTML so HTMX can swap it in.
+	jobs, err := h.store.ListJobs(r.Context())
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	colJobs := make([]db.Job, 0)
+	for _, j := range jobs {
+		if j.Stage == stage {
+			colJobs = append(colJobs, j)
+		}
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	err = ui.Column(stage, colJobs).Render(r.Context(), w)
+	if err != nil {
+		log.Printf("render column: %v", err)
+	}
 }
