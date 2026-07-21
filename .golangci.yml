@@ -31,7 +31,10 @@ linters:
       ignore-names:
         - db
         - id
+        - r
+        - s
         - tx
+        - w
   exclusions:
     generated: lax
     presets:

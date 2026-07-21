@@ -15,10 +15,13 @@ func TestHealthEndpoint(t *testing.T) {
 	ts := httptest.NewServer(srv.Router())
 	defer ts.Close()
 
-	resp, err := http.Get(ts.URL + "/health")
+	resp, err := http.Get(ts.URL + "/health") //nolint:noctx
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("got %d, want 200", resp.StatusCode)
 	}

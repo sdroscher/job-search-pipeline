@@ -1,10 +1,11 @@
 package migrate_test
 
 import (
+	"context"
 	"database/sql"
 	"testing"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/mattn/go-sqlite3" // register sqlite3 driver
 	"github.com/sdroscher/job-search-pipeline/internal/migrate"
 )
 
@@ -13,16 +14,21 @@ func TestRun_CreatesSchema(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	defer db.Close()
 
-	if err := migrate.Run(db); err != nil {
+	err = migrate.Run(db)
+	if err != nil {
 		t.Fatalf("migrate.Run: %v", err)
 	}
+
+	ctx := context.Background()
 
 	// verify tables exist
 	for _, table := range []string{"user_profile", "jobs", "activity_log", "artifacts"} {
 		var name string
-		err := db.QueryRow(
+
+		err := db.QueryRowContext(ctx,
 			"SELECT name FROM sqlite_master WHERE type='table' AND name=?", table,
 		).Scan(&name)
 		if err != nil {

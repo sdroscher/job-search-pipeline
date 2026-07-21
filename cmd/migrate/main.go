@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/mattn/go-sqlite3" // register sqlite3 driver
 	"github.com/sdroscher/job-search-pipeline/internal/migrate"
 )
 
@@ -14,13 +14,18 @@ func main() {
 	if dsn == "" {
 		dsn = "./data/pipeline.db"
 	}
+
 	db, err := sql.Open("sqlite3", dsn)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.Close()
-	if err := migrate.Run(db); err != nil {
+
+	err = migrate.Run(db)
+	if err != nil {
+		_ = db.Close()
 		log.Fatal(err)
 	}
+
+	_ = db.Close()
 	log.Println("migrations applied")
 }

@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/mattn/go-sqlite3" // register sqlite3 driver
 	"github.com/sdroscher/job-search-pipeline/internal/migrate"
 )
 
@@ -20,23 +20,30 @@ func NewStore(dsn string) (*Store, error) {
 	if err != nil {
 		return nil, fmt.Errorf("open db: %w", err)
 	}
-	if err := migrate.Run(db); err != nil {
+
+	err = migrate.Run(db)
+	if err != nil {
 		return nil, fmt.Errorf("migrate: %w", err)
 	}
+
 	return &Store{db: db, Queries: New(db)}, nil
 }
 
 func (s *Store) Close() error { return s.db.Close() }
 
-// WithTx runs fn inside a transaction, rolling back on error.
-func (s *Store) WithTx(ctx context.Context, fn func(*Queries) error) error {
+// WithTx runs callback inside a transaction, rolling back on error.
+func (s *Store) WithTx(ctx context.Context, callback func(*Queries) error) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
-	if err := fn(New(tx)); err != nil {
+
+	err = callback(New(tx))
+	if err != nil {
 		_ = tx.Rollback()
+
 		return err
 	}
+
 	return tx.Commit()
 }

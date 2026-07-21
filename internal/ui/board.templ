@@ -1,0 +1,91 @@
+package ui
+
+import (
+	"fmt"
+
+	"github.com/sdroscher/job-search-pipeline/internal/db"
+)
+
+var activeStages = []string{
+	"Evaluated", "Applied", "AI Assessment", "Screening",
+	"Interviewing", "Final Round", "Offer",
+}
+
+var stageColors = map[string]string{
+	"Evaluated":     "stage-evaluated",
+	"Applied":       "stage-applied",
+	"AI Assessment": "stage-ai-assessment",
+	"Screening":     "stage-screening",
+	"Interviewing":  "stage-interviewing",
+	"Final Round":   "stage-final-round",
+	"Offer":         "stage-offer",
+}
+
+templ Board(jobsByStage map[string][]db.Job) {
+	<div id="board" class="board">
+		for _, stage := range activeStages {
+			@Column(stage, jobsByStage[stage])
+		}
+	</div>
+	<script>
+		document.querySelectorAll('.column-cards').forEach(function(el) {
+			Sortable.create(el, {
+				group: 'board',
+				animation: 150,
+				onEnd: function(evt) {
+					var jobId = evt.item.dataset.jobId;
+					var newStage = evt.to.dataset.stage;
+					htmx.ajax('POST', '/panels/jobs/' + jobId + '/stage', {
+						swap: 'none',
+						values: { stage: newStage }
+					});
+				}
+			});
+		});
+	</script>
+}
+
+templ Column(stage string, jobs []db.Job) {
+	<div class={ "column", stageColors[stage] }>
+		<div class="column-header">
+			<span class="column-title">{ stage }</span>
+			if len(jobs) > 0 {
+				<span class="column-count">{ fmt.Sprintf("%d", len(jobs)) }</span>
+			}
+		</div>
+		<div class="column-cards" data-stage={ stage }>
+			for _, job := range jobs {
+				@JobCard(job, false)
+			}
+		</div>
+	</div>
+}
+
+templ JobCard(job db.Job, stale bool) {
+	<div
+		class="job-card"
+		data-job-id={ job.ID }
+		hx-get={ "/panels/jobs/" + job.ID }
+		hx-target="#detail-panel"
+		hx-swap="innerHTML"
+	>
+		<div class="job-card-company">{ job.Company }</div>
+		<div class="job-card-role">{ job.Role }</div>
+		<div class="job-card-meta">
+			@VerdictBadge(VerdictValue(job.Verdict))
+			if job.FitScore != nil {
+				@FitScoreBar(int(*job.FitScore))
+			}
+			if stale {
+				@StaleWarning()
+			}
+		</div>
+	</div>
+}
+
+templ IndexPage(jobsByStage map[string][]db.Job) {
+	@Page("Board") {
+		@Board(jobsByStage)
+		<div id="detail-panel" class="detail-panel"></div>
+	}
+}

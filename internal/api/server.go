@@ -29,7 +29,7 @@ func (s *Server) Router() http.Handler {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
-	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+	r.Get("/health", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 
@@ -74,19 +74,47 @@ func (s *Server) jobRoutes(r chi.Router) {
 	})
 }
 
-// Stub handlers — replaced in later tasks
-func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request)          { w.WriteHeader(http.StatusOK) }
-func (s *Server) handleGetProfile(w http.ResponseWriter, r *http.Request)     { w.WriteHeader(http.StatusOK) }
-func (s *Server) handlePutProfile(w http.ResponseWriter, r *http.Request)     { w.WriteHeader(http.StatusOK) }
-func (s *Server) handleListJobs(w http.ResponseWriter, r *http.Request)       { w.WriteHeader(http.StatusOK) }
-func (s *Server) handleCreateJob(w http.ResponseWriter, r *http.Request)      { w.WriteHeader(http.StatusOK) }
-func (s *Server) handleGetJob(w http.ResponseWriter, r *http.Request)         { w.WriteHeader(http.StatusOK) }
-func (s *Server) handleUpdateJob(w http.ResponseWriter, r *http.Request)      { w.WriteHeader(http.StatusOK) }
-func (s *Server) handleDeleteJob(w http.ResponseWriter, r *http.Request)      { w.WriteHeader(http.StatusOK) }
-func (s *Server) handleCreateActivity(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) }
-func (s *Server) handleListArtifacts(w http.ResponseWriter, r *http.Request)  { w.WriteHeader(http.StatusOK) }
-func (s *Server) handleCreateArtifact(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) }
-func (s *Server) handleParse(w http.ResponseWriter, r *http.Request)          { w.WriteHeader(http.StatusOK) }
-func (s *Server) handleBoardPanel(w http.ResponseWriter, r *http.Request)     { w.WriteHeader(http.StatusOK) }
-func (s *Server) handleJobDetailPanel(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) }
-func (s *Server) handleUpdateStage(w http.ResponseWriter, r *http.Request)    { w.WriteHeader(http.StatusOK) }
+// Stub handlers — replaced in later tasks.
+func (s *Server) handleGetProfile(w http.ResponseWriter, _ *http.Request) {
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) handlePutProfile(w http.ResponseWriter, _ *http.Request) {
+	w.WriteHeader(http.StatusOK)
+}
+func (s *Server) handleListJobs(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }
+func (s *Server) handleCreateJob(w http.ResponseWriter, _ *http.Request) {
+	w.WriteHeader(http.StatusOK)
+}
+func (s *Server) handleGetJob(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }
+func (s *Server) handleUpdateJob(w http.ResponseWriter, _ *http.Request) {
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) handleDeleteJob(w http.ResponseWriter, _ *http.Request) {
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) handleCreateActivity(w http.ResponseWriter, _ *http.Request) {
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) handleListArtifacts(w http.ResponseWriter, _ *http.Request) {
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) handleCreateArtifact(w http.ResponseWriter, _ *http.Request) {
+	w.WriteHeader(http.StatusOK)
+}
+func (s *Server) handleParse(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }
+func (s *Server) handleBoardPanel(w http.ResponseWriter, _ *http.Request) {
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) handleJobDetailPanel(w http.ResponseWriter, _ *http.Request) {
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) handleUpdateStage(w http.ResponseWriter, _ *http.Request) {
+	w.WriteHeader(http.StatusOK)
+}

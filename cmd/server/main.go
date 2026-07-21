@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/alecthomas/kong"
 	"github.com/sdroscher/job-search-pipeline/internal/api"
@@ -16,10 +17,13 @@ func main() {
 	var cfg config.Config
 	kong.Parse(&cfg)
 
-	if err := os.MkdirAll(cfg.DataDir, 0o750); err != nil {
+	err := os.MkdirAll(cfg.DataDir, 0o750)
+	if err != nil {
 		log.Fatalf("create data dir: %v", err)
 	}
-	if err := os.MkdirAll(cfg.OutputDir, 0o750); err != nil {
+
+	err = os.MkdirAll(cfg.OutputDir, 0o750)
+	if err != nil {
 		log.Fatalf("create output dir: %v", err)
 	}
 
@@ -27,12 +31,25 @@ func main() {
 	if err != nil {
 		log.Fatalf("open store: %v", err)
 	}
-	defer store.Close()
 
 	srv := api.NewServer(store, api.Config{OutputDir: cfg.OutputDir})
 	addr := fmt.Sprintf(":%d", cfg.Port)
+
+	server := &http.Server{
+		Addr:         addr,
+		Handler:      srv.Router(),
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 30 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
+
 	log.Printf("listening on %s", addr)
-	if err := http.ListenAndServe(addr, srv.Router()); err != nil {
+
+	err = server.ListenAndServe()
+
+	_ = store.Close()
+
+	if err != nil {
 		log.Fatal(err)
 	}
 }

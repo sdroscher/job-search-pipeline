@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"testing"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/mattn/go-sqlite3" // register sqlite3 driver
 	"github.com/sdroscher/job-search-pipeline/internal/migrate"
 )
 
@@ -16,8 +16,11 @@ func NewTestStore(t *testing.T) *Store {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { sqlDB.Close() })
-	if err := migrate.Run(sqlDB); err != nil {
+
+	err = migrate.Run(sqlDB)
+	if err != nil {
 		t.Fatalf("migrate: %v", err)
 	}
+
 	return &Store{db: sqlDB, Queries: New(sqlDB)}
 }

@@ -1,6 +1,7 @@
 package migrate
 
 import (
+	"context"
 	"database/sql"
 	_ "embed"
 	"fmt"
@@ -10,8 +11,10 @@ import (
 var schema string
 
 func Run(db *sql.DB) error {
-	if _, err := db.Exec(schema); err != nil {
+	_, err := db.ExecContext(context.Background(), schema)
+	if err != nil {
 		return fmt.Errorf("apply schema: %w", err)
 	}
+
 	return nil
 }

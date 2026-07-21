@@ -1,0 +1,34 @@
+package ui
+
+import "fmt"
+
+// VerdictValue is the string type for job verdicts.
+type VerdictValue string
+
+const (
+	VerdictGreen  VerdictValue = "green"
+	VerdictYellow VerdictValue = "yellow"
+	VerdictRed    VerdictValue = "red"
+)
+
+var verdictEmoji = map[VerdictValue]string{
+	VerdictGreen:  "🟢",
+	VerdictYellow: "🟡",
+	VerdictRed:    "🔴",
+}
+
+templ VerdictBadge(v VerdictValue) {
+	<span class="verdict-badge" data-verdict={ string(v) }>
+		{ verdictEmoji[v] }
+	</span>
+}
+
+templ FitScoreBar(score int) {
+	<span class="fit-score" title={ fmt.Sprintf("Fit score: %d/10", score) }>
+		{ fmt.Sprintf("%d", score) }
+	</span>
+}
+
+templ StaleWarning() {
+	<span class="stale-warning" title="Artifacts may be out of date — profile has changed">⚠</span>
+}
