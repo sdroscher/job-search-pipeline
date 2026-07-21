@@ -31,6 +31,16 @@ func (s *ParserSuite) TestFetchLever() {
 	s.Contains(job.BodyMD, "Responsibilities")
 }
 
+func (s *ParserSuite) TestFetchLeverFromAPI_Non200() {
+	mock := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer mock.Close()
+
+	_, err := parser.FetchLeverFromAPI(mock.URL, "https://jobs.lever.co/acme/abc-123")
+	s.Require().Error(err)
+}
+
 func (s *ParserSuite) TestDetectATS_Lever() {
 	urls := []string{
 		"https://jobs.lever.co/temporal/abc-123",

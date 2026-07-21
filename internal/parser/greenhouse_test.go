@@ -34,6 +34,21 @@ func (s *ParserSuite) TestFetchGreenhouse() {
 	s.Contains(job.BodyMD, "Senior SWE")
 }
 
+func (s *ParserSuite) TestFetchGreenhouseFromAPI_Non200() {
+	mock := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}))
+	defer mock.Close()
+
+	_, err := parser.FetchGreenhouseFromAPI(mock.URL, "https://boards.greenhouse.io/acme/jobs/1")
+	s.Require().Error(err)
+}
+
+func (s *ParserSuite) TestFetchGreenhouse_URLMismatch() {
+	_, err := parser.FetchGreenhouse("https://not-a-greenhouse-url.com/jobs/123")
+	s.Require().Error(err)
+}
+
 func (s *ParserSuite) TestDetectATS_Greenhouse() {
 	urls := []string{
 		"https://boards.greenhouse.io/temporal/jobs/12345",

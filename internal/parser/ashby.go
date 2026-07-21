@@ -1,12 +1,12 @@
 package parser
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"regexp"
-	"strings"
 )
 
 var (
@@ -28,13 +28,19 @@ func FetchAshby(rawURL string) (*ParsedJob, error) {
 	return FetchAshbyFromAPI("https://api.ashbyhq.com/jobPosting.info", rawURL, org, jobID)
 }
 
+type ashbyRequest struct {
+	OrgName string `json:"organizationHostedJobsPageName"` //nolint:tagliatelle
+	JobID   string `json:"jobPostingId"`                   //nolint:tagliatelle
+}
+
 // FetchAshbyFromAPI fetches an Ashby job from an injectable API base URL (used in tests).
 func FetchAshbyFromAPI(apiBase, sourceURL, org, jobID string) (*ParsedJob, error) {
-	payload := strings.NewReader(
-		fmt.Sprintf(`{"organizationHostedJobsPageName":%q,"jobPostingId":%q}`, org, jobID),
-	)
+	payload, err := json.Marshal(ashbyRequest{OrgName: org, JobID: jobID})
+	if err != nil {
+		return nil, fmt.Errorf("marshal request: %w", err)
+	}
 
-	resp, err := http.Post(apiBase, "application/json", payload) //nolint:noctx,gosec
+	resp, err := http.Post(apiBase, "application/json", bytes.NewReader(payload)) //nolint:noctx,gosec
 	if err != nil {
 		return nil, fmt.Errorf("ashby api: %w", err)
 	}

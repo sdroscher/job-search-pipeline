@@ -26,6 +26,16 @@ func (s *ParserSuite) TestScrapeHTML() {
 	s.Equal(mock.URL, job.SourceURL)
 }
 
+func (s *ParserSuite) TestScrapeHTMLFromURL_Non200() {
+	mock := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer mock.Close()
+
+	_, err := parser.ScrapeHTMLFromURL(mock.URL, mock.URL)
+	s.Require().Error(err)
+}
+
 func (s *ParserSuite) TestDetectATS_HTML() {
 	urls := []string{
 		"https://example.com/careers/job-123",

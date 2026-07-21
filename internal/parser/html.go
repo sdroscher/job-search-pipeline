@@ -1,12 +1,15 @@
 package parser
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
 )
+
+var errHTMLStatus = errors.New("html scrape: unexpected status")
 
 // ScrapeHTML fetches and scrapes an arbitrary HTML job posting page.
 func ScrapeHTML(rawURL string) (*ParsedJob, error) {
@@ -21,6 +24,10 @@ func ScrapeHTMLFromURL(fetchURL, sourceURL string) (*ParsedJob, error) {
 	}
 
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("status %d: %w", resp.StatusCode, errHTMLStatus)
+	}
 
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {

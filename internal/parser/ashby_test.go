@@ -31,6 +31,16 @@ func (s *ParserSuite) TestFetchAshby() {
 	s.Equal("Remote, US", job.Location)
 }
 
+func (s *ParserSuite) TestFetchAshbyFromAPI_SuccessFalse() {
+	mock := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		json.NewEncoder(w).Encode(map[string]any{"success": false}) //nolint:errcheck
+	}))
+	defer mock.Close()
+
+	_, err := parser.FetchAshbyFromAPI(mock.URL, "https://jobs.ashbyhq.com/acme/abc-123", "acme", "abc-123")
+	s.Require().Error(err)
+}
+
 func (s *ParserSuite) TestDetectATS_Ashby() {
 	urls := []string{
 		"https://jobs.ashbyhq.com/temporal/abc-123",

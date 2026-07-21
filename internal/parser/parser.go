@@ -30,7 +30,7 @@ func DetectATS(rawURL string) ATSType {
 	lowerURL := strings.ToLower(rawURL)
 
 	switch {
-	case strings.Contains(lowerURL, "boards.greenhouse.io") || strings.Contains(lowerURL, "greenhouse.io/jobs"):
+	case strings.Contains(lowerURL, "boards.greenhouse.io"):
 		return ATSGreenhouse
 	case strings.Contains(lowerURL, "jobs.ashbyhq.com") || strings.Contains(lowerURL, "ashbyhq.com"):
 		return ATSAshby

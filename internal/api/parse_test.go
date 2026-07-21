@@ -9,6 +9,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestHandleParse_InvalidBody(t *testing.T) {
+	ts, _ := newServer(t)
+
+	resp, err := http.Post(ts.URL+"/api/parse", "application/json", bytes.NewReader([]byte(`not-json`))) //nolint:noctx
+	require.NoError(t, err)
+
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
 func TestHandleParse_MissingURL(t *testing.T) {
 	ts, _ := newServer(t)
 
