@@ -1,6 +1,7 @@
 package panels
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -29,7 +30,11 @@ func (h *JobPanelHandler) HandleDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	activity, _ := h.store.ListActivityLog(r.Context(), id)
+	activity, err := h.store.ListActivityLog(r.Context(), id)
+	if err != nil {
+		log.Printf("list activity log failed: %v (id=%q)", err, id) // #nosec G706
+		activity = []db.ActivityLog{}
+	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	_ = ui.DetailPanel(job, activity).Render(r.Context(), w)
