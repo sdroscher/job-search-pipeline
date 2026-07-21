@@ -6,18 +6,13 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/sdroscher/job-search-pipeline/internal/api"
-	"github.com/sdroscher/job-search-pipeline/internal/db"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func newTestServer(t *testing.T) *httptest.Server {
 	t.Helper()
-	store := db.NewTestStore(t)
-	srv := api.NewServer(store, api.Config{OutputDir: t.TempDir()})
-	ts := httptest.NewServer(srv.Router())
-	t.Cleanup(ts.Close)
+	ts, _ := newServerWithStore(t)
 
 	return ts
 }

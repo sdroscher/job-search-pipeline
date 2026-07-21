@@ -1,0 +1,44 @@
+package ui
+
+import (
+	"fmt"
+
+	"github.com/sdroscher/job-search-pipeline/internal/db"
+)
+
+templ DetailPanel(job db.Job, activity []db.ActivityLog) {
+	<div class="detail-panel-inner">
+		<div class="detail-header">
+			<div class="detail-company">{ job.Company }</div>
+			<div class="detail-role">{ job.Role }</div>
+			<div class="detail-meta">
+				@VerdictBadge(VerdictValue(job.Verdict))
+				if job.FitScore != nil {
+					<span>Fit: { fmt.Sprintf("%d/10", int(*job.FitScore)) }</span>
+				}
+				if job.Salary != nil {
+					<span class="detail-salary">{ *job.Salary }</span>
+				}
+			</div>
+		</div>
+		if job.Summary != nil {
+			<p class="detail-summary">{ *job.Summary }</p>
+		}
+		<div class="detail-tabs">
+			<div class="detail-section">
+				<h3>Activity</h3>
+				<div class="activity-log">
+					for _, entry := range activity {
+						<div class="activity-entry">
+							<span class="activity-date">{ entry.Date.Format("2006-01-02") }</span>
+							<span class="activity-action">{ entry.Action }</span>
+							if entry.Notes != nil {
+								<span class="activity-notes">{ *entry.Notes }</span>
+							}
+						</div>
+					}
+				</div>
+			</div>
+		</div>
+	</div>
+}

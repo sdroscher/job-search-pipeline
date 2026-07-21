@@ -6,6 +6,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/sdroscher/job-search-pipeline/internal/db"
+	"github.com/sdroscher/job-search-pipeline/internal/panels"
 )
 
 // Config holds API-layer configuration.
@@ -15,12 +16,17 @@ type Config struct {
 
 // Server holds dependencies for all HTTP handlers.
 type Server struct {
-	store  *db.Store
-	config Config
+	store    *db.Store
+	config   Config
+	jobPanel *panels.JobPanelHandler
 }
 
 func NewServer(store *db.Store, cfg Config) *Server {
-	return &Server{store: store, config: cfg}
+	return &Server{
+		store:    store,
+		config:   cfg,
+		jobPanel: panels.NewJobPanelHandler(store),
+	}
 }
 
 // Router returns the fully-wired chi router.
@@ -99,10 +105,10 @@ func (s *Server) handleBoardPanel(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (s *Server) handleJobDetailPanel(w http.ResponseWriter, _ *http.Request) {
-	w.WriteHeader(http.StatusOK)
+func (s *Server) handleJobDetailPanel(w http.ResponseWriter, r *http.Request) {
+	s.jobPanel.HandleDetail(w, r)
 }
 
-func (s *Server) handleUpdateStage(w http.ResponseWriter, _ *http.Request) {
-	w.WriteHeader(http.StatusOK)
+func (s *Server) handleUpdateStage(w http.ResponseWriter, r *http.Request) {
+	s.jobPanel.HandleUpdateStage(w, r)
 }
