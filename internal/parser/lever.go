@@ -10,8 +10,9 @@ import (
 )
 
 var (
-	leverJobRe     = regexp.MustCompile(`jobs\.lever\.co/([^/]+)/([a-f0-9-]+)`)
-	errBadLeverURL = errors.New("unrecognised lever URL")
+	leverJobRe        = regexp.MustCompile(`jobs\.lever\.co/([^/]+)/([a-f0-9-]+)`)
+	errBadLeverURL    = errors.New("unrecognised lever URL")
+	errLeverAPIStatus = errors.New("lever api non-200 status")
 )
 
 // FetchLever parses a Lever-hosted job posting URL.
@@ -35,6 +36,10 @@ func FetchLeverFromAPI(apiURL, sourceURL string) (*ParsedJob, error) {
 	}
 
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("%w: %d", errLeverAPIStatus, resp.StatusCode)
+	}
 
 	var data struct {
 		Text       string `json:"text"`

@@ -10,9 +10,10 @@ import (
 )
 
 var (
-	ashbyJobRe     = regexp.MustCompile(`jobs\.ashbyhq\.com/([^/]+)/([a-f0-9-]+)`)
-	errBadAshbyURL = errors.New("unrecognised ashby URL")
-	errAshbyFailed = errors.New("ashby api returned success=false")
+	ashbyJobRe        = regexp.MustCompile(`jobs\.ashbyhq\.com/([^/]+)/([a-f0-9-]+)`)
+	errBadAshbyURL    = errors.New("unrecognised ashby URL")
+	errAshbyFailed    = errors.New("ashby api returned success=false")
+	errAshbyAPIStatus = errors.New("ashby api non-200 status")
 )
 
 // FetchAshby parses an Ashby-hosted job posting URL.
@@ -39,6 +40,10 @@ func FetchAshbyFromAPI(apiBase, sourceURL, org, jobID string) (*ParsedJob, error
 	}
 
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("%w: %d", errAshbyAPIStatus, resp.StatusCode)
+	}
 
 	var data struct {
 		Success bool `json:"success"`
