@@ -42,7 +42,7 @@ func Page(title string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, " — Job Pipeline</title><link rel=\"stylesheet\" href=\"/static/app.css\"><script src=\"https://unpkg.com/htmx.org@2.0.0\"></script><script src=\"/static/sortable.min.js\"></script></head><body><header class=\"app-header\"><span class=\"app-logo\">Job Pipeline</span></header><main class=\"app-main\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, " — Job Pipeline</title><link rel=\"stylesheet\" href=\"/static/app.css\"><script src=\"/static/htmx.min.js\"></script><script src=\"/static/sortable.min.js\"></script></head><body><header class=\"app-header\"><span class=\"app-logo\">Job Pipeline</span></header><main class=\"app-main\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

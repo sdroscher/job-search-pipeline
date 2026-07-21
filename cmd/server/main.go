@@ -1,10 +1,14 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/alecthomas/kong"
@@ -35,6 +39,8 @@ func main() {
 	srv := api.NewServer(store, api.Config{OutputDir: cfg.OutputDir})
 	addr := fmt.Sprintf(":%d", cfg.Port)
 
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+
 	server := &http.Server{
 		Addr:         addr,
 		Handler:      srv.Router(),
@@ -43,13 +49,20 @@ func main() {
 		IdleTimeout:  60 * time.Second,
 	}
 
+	go func() {
+		<-ctx.Done()
+		// Parent ctx is already cancelled; use a fresh background ctx for the shutdown grace period.
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_ = server.Shutdown(shutdownCtx) //nolint:contextcheck
+	}()
+
 	log.Printf("listening on %s", addr)
-
-	err = server.ListenAndServe()
-
+	serveErr := server.ListenAndServe()
 	_ = store.Close()
+	stop()
 
-	if err != nil {
-		log.Fatal(err)
+	if serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) {
+		log.Fatal(serveErr)
 	}
 }

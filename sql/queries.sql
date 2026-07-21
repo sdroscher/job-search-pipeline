@@ -51,8 +51,11 @@ UPDATE jobs SET
   summary       = COALESCE(sqlc.narg(summary), summary),
   positives     = COALESCE(sqlc.narg(positives), positives),
   concerns      = COALESCE(sqlc.narg(concerns), concerns),
-  my_notes      = COALESCE(sqlc.narg(my_notes), my_notes),
-  last_activity = CURRENT_DATE,
+  my_notes       = COALESCE(sqlc.narg(my_notes), my_notes),
+  company_values = COALESCE(sqlc.narg(company_values), company_values),
+  networking     = COALESCE(sqlc.narg(networking), networking),
+  role_details   = COALESCE(sqlc.narg(role_details), role_details),
+  last_activity  = CURRENT_DATE,
   updated_at    = CURRENT_TIMESTAMP
 WHERE id = sqlc.arg(id)
 RETURNING *;

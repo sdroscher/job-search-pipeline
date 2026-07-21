@@ -375,24 +375,30 @@ UPDATE jobs SET
   summary       = COALESCE(?6, summary),
   positives     = COALESCE(?7, positives),
   concerns      = COALESCE(?8, concerns),
-  my_notes      = COALESCE(?9, my_notes),
-  last_activity = CURRENT_DATE,
+  my_notes       = COALESCE(?9, my_notes),
+  company_values = COALESCE(?10, company_values),
+  networking     = COALESCE(?11, networking),
+  role_details   = COALESCE(?12, role_details),
+  last_activity  = CURRENT_DATE,
   updated_at    = CURRENT_TIMESTAMP
-WHERE id = ?10
+WHERE id = ?13
 RETURNING id, company, role, stage, verdict, salary, salary_min, remote, source, source_url, raw_jd, added, last_activity, fit_score, summary, positives, concerns, my_notes, company_values, networking, role_details, created_at, updated_at
 `
 
 type UpdateJobParams struct {
-	Stage     *string `json:"stage"`
-	Verdict   *string `json:"verdict"`
-	Salary    *string `json:"salary"`
-	SalaryMin *int64  `json:"salary_min"`
-	FitScore  *int64  `json:"fit_score"`
-	Summary   *string `json:"summary"`
-	Positives *string `json:"positives"`
-	Concerns  *string `json:"concerns"`
-	MyNotes   *string `json:"my_notes"`
-	ID        string  `json:"id"`
+	Stage         *string `json:"stage"`
+	Verdict       *string `json:"verdict"`
+	Salary        *string `json:"salary"`
+	SalaryMin     *int64  `json:"salary_min"`
+	FitScore      *int64  `json:"fit_score"`
+	Summary       *string `json:"summary"`
+	Positives     *string `json:"positives"`
+	Concerns      *string `json:"concerns"`
+	MyNotes       *string `json:"my_notes"`
+	CompanyValues *string `json:"company_values"`
+	Networking    *string `json:"networking"`
+	RoleDetails   *string `json:"role_details"`
+	ID            string  `json:"id"`
 }
 
 func (q *Queries) UpdateJob(ctx context.Context, arg UpdateJobParams) (Job, error) {
@@ -406,6 +412,9 @@ func (q *Queries) UpdateJob(ctx context.Context, arg UpdateJobParams) (Job, erro
 		arg.Positives,
 		arg.Concerns,
 		arg.MyNotes,
+		arg.CompanyValues,
+		arg.Networking,
+		arg.RoleDetails,
 		arg.ID,
 	)
 	var i Job

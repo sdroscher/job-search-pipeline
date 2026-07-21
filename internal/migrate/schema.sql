@@ -1,3 +1,8 @@
+-- Authoritative schema source. Embedded via //go:embed in internal/migrate/migrate.go
+-- and re-executed on every startup. All statements are CREATE TABLE IF NOT EXISTS,
+-- making this idempotent and append-only safe. To add new schema, append here only —
+-- do not use a separate migrations/ directory.
+
 CREATE TABLE IF NOT EXISTS user_profile (
   id                    INTEGER PRIMARY KEY DEFAULT 1,
   resume_md             TEXT NOT NULL DEFAULT '',

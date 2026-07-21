@@ -7,7 +7,6 @@ require (
 	github.com/a-h/templ v0.3.1020
 	github.com/alecthomas/kong v1.16.0
 	github.com/go-chi/chi/v5 v5.3.1
-	github.com/jmoiron/sqlx v1.4.0
 	github.com/mattn/go-sqlite3 v1.14.48
 	golang.org/x/net v0.57.0
 )
