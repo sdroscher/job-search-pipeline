@@ -1,0 +1,42 @@
+version: '3'
+
+dotenv: ['.env']
+
+tasks:
+  dev:
+    deps: [dev:templ]
+    cmd: go run ./cmd/server
+    env:
+      PORT: '{{.PORT | default "8080"}}'
+
+  dev:templ:
+    cmd: templ generate --watch
+    background: true
+
+  build:
+    cmds:
+      - templ generate
+      - go build -o bin/job-search-pipeline ./cmd/server
+
+  generate:
+    cmds:
+      - templ generate
+      - go generate ./...
+
+  test:
+    deps: [generate]
+    cmd: go test ./... -count=1 -race
+
+  test:unit:
+    deps: [generate]
+    cmd: go test ./internal/... -count=1 -race
+
+  test:feature:
+    deps: [generate]
+    cmd: go test ./tests/... -count=1 -race
+
+  lint:
+    cmd: golangci-lint run ./...
+
+  db:migrate:
+    cmd: go run ./cmd/migrate
