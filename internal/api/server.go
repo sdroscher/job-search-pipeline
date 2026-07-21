@@ -100,7 +100,7 @@ func (s *Server) handleListArtifacts(w http.ResponseWriter, _ *http.Request) {
 func (s *Server) handleCreateArtifact(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
-func (s *Server) handleParse(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }
+
 func (s *Server) handleBoardPanel(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
