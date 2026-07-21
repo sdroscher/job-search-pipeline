@@ -7,20 +7,18 @@ import (
 
 	_ "github.com/mattn/go-sqlite3" // register sqlite3 driver
 	"github.com/sdroscher/job-search-pipeline/internal/migrate"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRun_CreatesSchema(t *testing.T) {
 	db, err := sql.Open("sqlite3", ":memory:")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	defer db.Close()
 
 	err = migrate.Run(db)
-	if err != nil {
-		t.Fatalf("migrate.Run: %v", err)
-	}
+	require.NoError(t, err, "migrate.Run")
 
 	ctx := context.Background()
 
@@ -31,8 +29,6 @@ func TestRun_CreatesSchema(t *testing.T) {
 		err := db.QueryRowContext(ctx,
 			"SELECT name FROM sqlite_master WHERE type='table' AND name=?", table,
 		).Scan(&name)
-		if err != nil {
-			t.Errorf("table %q not found: %v", table, err)
-		}
+		assert.NoError(t, err, "table %q not found", table)
 	}
 }

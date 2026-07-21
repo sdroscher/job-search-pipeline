@@ -7,6 +7,8 @@ import (
 
 	"github.com/sdroscher/job-search-pipeline/internal/api"
 	"github.com/sdroscher/job-search-pipeline/internal/db"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestHealthEndpoint(t *testing.T) {
@@ -16,13 +18,9 @@ func TestHealthEndpoint(t *testing.T) {
 	defer ts.Close()
 
 	resp, err := http.Get(ts.URL + "/health") //nolint:noctx
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("got %d, want 200", resp.StatusCode)
-	}
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }

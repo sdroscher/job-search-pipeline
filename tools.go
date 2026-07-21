@@ -7,6 +7,7 @@ import (
 	_ "github.com/a-h/templ"
 	_ "github.com/alecthomas/kong"
 	_ "github.com/go-chi/chi/v5"
-_ "github.com/mattn/go-sqlite3"
+	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/stretchr/testify/assert"
 	_ "golang.org/x/net/html"
 )

@@ -6,36 +6,42 @@ import (
 	"time"
 
 	"github.com/sdroscher/job-search-pipeline/internal/db"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestStore_UpsertAndGetProfile(t *testing.T) {
-	s := db.NewTestStore(t)
+// StoreSuite groups all Store tests that share a common test-store setup.
+type StoreSuite struct {
+	suite.Suite
+	store *db.Store
+}
+
+func (s *StoreSuite) SetupTest() {
+	s.store = db.NewTestStore(s.T())
+}
+
+func TestStoreSuite(t *testing.T) {
+	suite.Run(t, new(StoreSuite))
+}
+
+func (s *StoreSuite) TestUpsertAndGetProfile() {
 	ctx := context.Background()
 
-	_, err := s.UpsertProfile(ctx, db.UpsertProfileParams{
+	_, err := s.store.UpsertProfile(ctx, db.UpsertProfileParams{
 		ResumeMd:    "# My Resume",
 		ProfileHash: "abc123",
 	})
-	if err != nil {
-		t.Fatalf("UpsertProfile: %v", err)
-	}
+	s.Require().NoError(err, "UpsertProfile")
 
-	got, err := s.GetProfile(ctx)
-	if err != nil {
-		t.Fatalf("GetProfile: %v", err)
-	}
-	if got.ResumeMd != "# My Resume" {
-		t.Errorf("got resume %q, want %q", got.ResumeMd, "# My Resume")
-	}
+	got, err := s.store.GetProfile(ctx)
+	s.Require().NoError(err, "GetProfile")
+	s.Equal("# My Resume", got.ResumeMd)
 }
 
-func TestStore_CreateAndListJobs(t *testing.T) {
-	s := db.NewTestStore(t)
+func (s *StoreSuite) TestCreateAndListJobs() {
 	ctx := context.Background()
-
 	now := time.Date(2026, 7, 20, 0, 0, 0, 0, time.UTC)
 
-	_, err := s.CreateJob(ctx, db.CreateJobParams{
+	_, err := s.store.CreateJob(ctx, db.CreateJobParams{
 		ID:           "acme-staff-swe",
 		Company:      "Acme",
 		Role:         "Staff SWE",
@@ -44,18 +50,10 @@ func TestStore_CreateAndListJobs(t *testing.T) {
 		Added:        now,
 		LastActivity: now,
 	})
-	if err != nil {
-		t.Fatalf("CreateJob: %v", err)
-	}
+	s.Require().NoError(err, "CreateJob")
 
-	jobs, err := s.ListJobs(ctx)
-	if err != nil {
-		t.Fatalf("ListJobs: %v", err)
-	}
-	if len(jobs) != 1 {
-		t.Fatalf("got %d jobs, want 1", len(jobs))
-	}
-	if jobs[0].Company != "Acme" {
-		t.Errorf("got company %q, want %q", jobs[0].Company, "Acme")
-	}
+	jobs, err := s.store.ListJobs(ctx)
+	s.Require().NoError(err, "ListJobs")
+	s.Require().Len(jobs, 1)
+	s.Equal("Acme", jobs[0].Company)
 }

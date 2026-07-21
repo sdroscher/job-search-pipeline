@@ -4,11 +4,12 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/sdroscher/job-search-pipeline/internal/api"
 	"github.com/sdroscher/job-search-pipeline/internal/db"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func newTestServer(t *testing.T) *httptest.Server {
@@ -25,26 +26,18 @@ func TestBoard_EmptyRendersAllColumns(t *testing.T) {
 	ts := newTestServer(t)
 
 	resp, err := http.Get(ts.URL + "/") //nolint:noctx
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("got %d, want 200", resp.StatusCode)
-	}
+	require.Equal(t, http.StatusOK, resp.StatusCode)
 
 	raw, err := io.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	body := string(raw)
 
 	for _, stage := range []string{"Evaluated", "Applied", "AI Assessment", "Screening", "Interviewing", "Final Round", "Offer"} {
-		if !strings.Contains(body, stage) {
-			t.Errorf("board missing column %q", stage)
-		}
+		assert.Contains(t, body, stage, "board missing column %q", stage)
 	}
 }
