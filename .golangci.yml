@@ -27,12 +27,17 @@ linters:
               desc: Should be replaced by standard lib errors package
     funlen:
       lines: 70
+    tagliatelle:
+      case:
+        rules:
+          json: snake
     varnamelen:
       ignore-names:
         - db
         - id
         - r
         - s
+        - ts
         - tx
         - w
   exclusions:

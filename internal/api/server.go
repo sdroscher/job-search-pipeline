@@ -82,18 +82,6 @@ func (s *Server) handleGetProfile(w http.ResponseWriter, _ *http.Request) {
 func (s *Server) handlePutProfile(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
-func (s *Server) handleListJobs(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }
-func (s *Server) handleCreateJob(w http.ResponseWriter, _ *http.Request) {
-	w.WriteHeader(http.StatusOK)
-}
-func (s *Server) handleGetJob(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }
-func (s *Server) handleUpdateJob(w http.ResponseWriter, _ *http.Request) {
-	w.WriteHeader(http.StatusOK)
-}
-
-func (s *Server) handleDeleteJob(w http.ResponseWriter, _ *http.Request) {
-	w.WriteHeader(http.StatusOK)
-}
 
 func (s *Server) handleCreateActivity(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
