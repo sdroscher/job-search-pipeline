@@ -41,7 +41,7 @@ func TestListJobs_Empty(t *testing.T) {
 }
 
 func TestCreateJob_ThenGet(t *testing.T) {
-	ts, _ := newServer(t)
+	ts, store := newServer(t)
 	today := time.Now().UTC().Format("2006-01-02")
 
 	body, err := json.Marshal(map[string]any{
@@ -74,6 +74,12 @@ func TestCreateJob_ThenGet(t *testing.T) {
 	require.NoError(t, json.NewDecoder(resp2.Body).Decode(&job))
 	assert.Equal(t, "Acme", job["company"])
 	assert.Equal(t, "Staff SWE", job["role"])
+
+	// Verify activity log entry was created with Action: "Added"
+	entries, err := store.ListActivityLog(context.Background(), "acme-staff-swe")
+	require.NoError(t, err)
+	require.Len(t, entries, 1)
+	assert.Equal(t, "Added", entries[0].Action)
 }
 
 func TestUpdateJob_Stage(t *testing.T) {
