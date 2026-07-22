@@ -1,59 +1,127 @@
 # Job Search Pipeline
 
-Self-hosted AI-powered job tracking board with Claude Code integration.
+A self-hosted job search tracker and AI assistant built for senior engineers running a focused, high-signal search. You keep your jobs, notes, and generated documents in one place — a local Kanban board that lives in a SQLite file you own — and Claude Code does the heavy lifting: evaluating fit, writing tailored resumes and cover letters, and generating interview prep.
+
+The workflow is:
+1. Run `/job-search init` in Claude Code to save your profile (resume, salary range, preferences).
+2. Run `/job-search add <url>` on any job posting. Claude fetches the JD, scores fit 1–10 against your profile, writes a summary, and adds the job to your board.
+3. Open `http://localhost:8080` to see your Kanban board. Drag jobs between stages as you progress. Click any card to see the full evaluation, activity log, and generated documents.
+4. Use `/job-search resume`, `/job-search cover-letter`, and `/job-search prep` to generate tailored documents for jobs you want to pursue. The board shows a stale indicator (⚠) when your profile has changed since a document was generated, so you know what to regenerate.
+5. Use `/job-search eval` to re-score a job when new information comes in (salary disclosed, role clarified, etc.).
+
+**Tech stack:** Go, chi, templ, HTMX, Sortable.js, SQLite, sqlc. No external services, no telemetry, no accounts.
+
+---
 
 ## Quick start
 
 ### Requirements
+
 - Go 1.25+
 - [Task](https://taskfile.dev) (`brew install go-task`)
 - [templ](https://templ.guide) (`go install github.com/a-h/templ/cmd/templ@latest`)
 - [sqlc](https://sqlc.dev) (`go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest`)
 - [golangci-lint](https://golangci-lint.run) (`brew install golangci-lint`)
-- Claude Code
+- [Claude Code](https://claude.ai/code)
 
 ### Setup
 
 ```bash
 git clone https://github.com/you/job-search-pipeline
 cd job-search-pipeline
-cp .env.example .env
 task dev
 ```
 
-Open Claude Code in this directory, then run `/job-search init`.
+Open `http://localhost:8080` — you'll see an empty board with seven stages: Evaluated → Applied → AI Assessment → Screening → Interviewing → Final Round → Offer.
 
-### Config (via env or CLI flags)
+Open Claude Code in this directory and run `/job-search init` to save your profile.
+
+---
+
+## The board
+
+`http://localhost:8080` is a Kanban board with one column per pipeline stage. Each card shows the company, role, fit score, and verdict (green/yellow/red). Cards are draggable between columns — dropping a card on a new column updates the stage immediately via HTMX. Clicking a card opens a detail panel with the full AI evaluation, salary, remote status, positives, concerns, and activity log.
+
+A ⚠ icon on a card means one or more generated documents (resume, cover letter) were created against an older version of your profile. Run `/job-search resume <id>` or `/job-search cover-letter <id>` to regenerate.
+
+---
+
+## Claude Code skill
+
+Run these commands from any Claude Code session open in this directory. The skill reads `$JOB_PIPELINE_URL` (default `http://localhost:8080`) so the server must be running.
+
+### `/job-search init`
+
+First-time setup. Claude asks for your resume (paste or file path), salary range, remote preference, location, preferred industries, tech stack, green flags, red flags, and writing voice notes. Saves everything to `/api/profile`.
+
+### `/job-search add <url>`
+
+Paste a job URL from Greenhouse, Ashby, Lever, or any careers page. Claude:
+- Fetches and parses the job description (structured API where available, HTML scraper as fallback)
+- Fetches the company's careers/about page to extract named values and mission
+- Scores fit 1–10 across salary alignment (25%), remote/location match (20%), tech stack (20%), green/red flags (20%), and role seniority (15%)
+- Sets verdict: green (8–10), yellow (5–7), red (1–4)
+- Writes 3–5 specific positives and 3–5 specific concerns
+- Generates a one-paragraph summary calibrated to your profile
+- Adds the job to your board in the Evaluated stage
+- If the URL can't be parsed, prompts you to paste the JD directly
+
+### `/job-search resume <job-id>`
+
+Generates a tailored resume in Markdown. Claude reorders your experience bullets so the most JD-relevant ones lead in each role, adjusts your summary to mirror the JD's language, and surfaces the specific technologies the role calls for — without inventing experience. Saves to `$OUTPUT_DIR/resume-<company>-<role>.md` and registers the document as an artifact (so the board can track freshness).
+
+### `/job-search cover-letter <job-id>`
+
+Generates a four-paragraph cover letter in your voice:
+- **P1:** What drew you to this company specifically — named values, specific product, remote-first culture, etc.
+- **P2:** One achievement story that connects your background to the team's actual work.
+- **P3:** Three numbered achievements most relevant to the JD, specific and measurable where possible.
+- **P4:** Availability and closing invitation.
+
+Uses your `writing_voice_md` guide and `cover_letter_sample` if you provided them during init. Saves to `$OUTPUT_DIR/cover-letter-<company>-<role>.md`.
+
+### `/job-search prep <job-id>`
+
+Generates an interview prep document with 5–7 behavioral questions (each with a suggested STAR story from your experience), 5–7 technical questions based on the role's stack, a research checklist (company news, blog posts, team context), and 5–7 questions to ask them about team structure, on-call, tech debt, and growth. Saves to `$OUTPUT_DIR/prep-<company>-<role>.md`.
+
+### `/job-search eval <job-id>`
+
+Re-runs the fit evaluation with the same scoring rubric as `add`. Use this when salary is disclosed, the role scope is clarified, or your profile has changed. Updates fit score, verdict, positives, and concerns in the DB and logs the change to the activity log (e.g. "fitScore 6 → 9").
+
+---
+
+## Config
 
 | Flag | Env | Default | Description |
 |---|---|---|---|
-| `--port` | `PORT` | `8080` | HTTP port |
-| `--database-url` | `DATABASE_URL` | `./data/pipeline.db` | SQLite path |
-| `--output-dir` | `OUTPUT_DIR` | `./output` | Resume/cover letter output |
-
-`./bin/job-search-pipeline --help` for full usage.
-
-### Claude Code commands
-
-| Command | Description |
-|---|---|
-| `/job-search init` | First-time profile setup |
-| `/job-search add <url>` | Parse, evaluate, and add a job |
-| `/job-search resume <job-id>` | Generate tailored resume |
-| `/job-search cover-letter <job-id>` | Generate cover letter |
-| `/job-search prep <job-id>` | Interview prep notes |
-| `/job-search eval <job-id>` | Re-evaluate fit |
-
-### Linting
-
-Place your `.golangci.yml` at the repo root, then:
+| `--port` | `PORT` | `8080` | HTTP listen port |
+| `--database-url` | `DATABASE_URL` | `./data/pipeline.db` | SQLite file path |
+| `--output-dir` | `OUTPUT_DIR` | `./output` | Resume/cover letter output directory |
 
 ```bash
-task lint
+./bin/job-search-pipeline --help
 ```
 
-### Docker
+---
+
+## Docker
 
 ```bash
 docker compose up
 ```
+
+The container mounts `./data` (SQLite) and `./output` (generated documents) as volumes, so data survives restarts.
+
+---
+
+## Development
+
+```bash
+task generate    # regenerate sqlc queries and templ templates
+task test        # run all tests (unit + feature)
+task lint        # golangci-lint
+task coverage    # test coverage summary (hand-written code only)
+task build       # compile to bin/job-search-pipeline
+```
+
+Generated files (`internal/db/db.go`, `internal/db/models.go`, `internal/db/queries.sql.go`, `internal/ui/*_templ.go`) are excluded from git and regenerated on each build. Edit `sql/queries.sql` or `internal/ui/*.templ` and run `task generate` to update them.
