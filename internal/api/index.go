@@ -38,7 +38,13 @@ func (s *Server) staleJobSet(ctx context.Context, jobs []db.Job) map[string]bool
 	stale := make(map[string]bool)
 
 	for _, job := range jobs {
-		artifacts, _ := s.store.ListArtifacts(ctx, job.ID)
+		artifacts, err := s.store.ListArtifacts(ctx, job.ID)
+		if err != nil {
+			log.Printf("list artifacts for stale check (job=%s): %v", job.ID, err)
+
+			continue
+		}
+
 		for _, artifact := range artifacts {
 			if artifact.Stale == 1 {
 				stale[job.ID] = true

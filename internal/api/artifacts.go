@@ -1,6 +1,8 @@
 package api
 
 import (
+	"database/sql"
+	"errors"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -34,6 +36,17 @@ func (s *Server) handleListArtifacts(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleCreateArtifact(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
+
+	_, jobErr := s.store.GetJob(r.Context(), id)
+	if jobErr != nil {
+		if errors.Is(jobErr, sql.ErrNoRows) {
+			http.Error(w, "job not found", http.StatusNotFound)
+		} else {
+			http.Error(w, jobErr.Error(), http.StatusInternalServerError)
+		}
+
+		return
+	}
 
 	var req createArtifactRequest
 

@@ -1,6 +1,7 @@
 package panels
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"log"
@@ -92,17 +93,7 @@ func (h *JobPanelHandler) HandleUpdateStage(w http.ResponseWriter, r *http.Reque
 		}
 	}
 
-	staleJobs := make(map[string]bool)
-	for _, job := range colJobs {
-		artifacts, _ := h.store.ListArtifacts(r.Context(), job.ID)
-		for _, artifact := range artifacts {
-			if artifact.Stale == 1 {
-				staleJobs[job.ID] = true
-
-				break
-			}
-		}
-	}
+	staleJobs := h.staleJobSet(r.Context(), colJobs)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
@@ -110,4 +101,28 @@ func (h *JobPanelHandler) HandleUpdateStage(w http.ResponseWriter, r *http.Reque
 	if err != nil {
 		log.Printf("render column: %v", err)
 	}
+}
+
+// staleJobSet returns a set of job IDs that have at least one stale artifact.
+func (h *JobPanelHandler) staleJobSet(ctx context.Context, jobs []db.Job) map[string]bool {
+	stale := make(map[string]bool, len(jobs))
+
+	for _, job := range jobs {
+		artifacts, err := h.store.ListArtifacts(ctx, job.ID)
+		if err != nil {
+			log.Printf("list artifacts for stale check (job=%s): %v", job.ID, err)
+
+			continue
+		}
+
+		for _, artifact := range artifacts {
+			if artifact.Stale == 1 {
+				stale[job.ID] = true
+
+				break
+			}
+		}
+	}
+
+	return stale
 }

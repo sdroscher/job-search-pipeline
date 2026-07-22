@@ -179,3 +179,49 @@ func TestUpdateJob_NotFound(t *testing.T) {
 
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 }
+
+func TestCreateActivity_UnknownJob(t *testing.T) {
+	ts, _ := newServer(t)
+
+	body, err := json.Marshal(map[string]any{
+		"date":   time.Now().UTC().Format("2006-01-02"),
+		"action": "Applied",
+		"notes":  "",
+	})
+	require.NoError(t, err)
+
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, ts.URL+"/api/jobs/no-such-job/activity", bytes.NewReader(body))
+	require.NoError(t, err)
+
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+}
+
+func TestCreateArtifact_UnknownJob(t *testing.T) {
+	ts, _ := newServer(t)
+
+	body, err := json.Marshal(map[string]any{
+		"type":         "cover_letter",
+		"filepath":     t.TempDir() + "/cover.md",
+		"profile_hash": "abc123",
+	})
+	require.NoError(t, err)
+
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, ts.URL+"/api/jobs/no-such-job/artifacts", bytes.NewReader(body))
+	require.NoError(t, err)
+
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+}
