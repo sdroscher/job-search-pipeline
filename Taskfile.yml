@@ -35,6 +35,10 @@ tasks:
     deps: [generate]
     cmd: go test ./tests/... -count=1 -race
 
+  coverage:
+    deps: [generate]
+    cmd: go test ./... -count=1 -coverprofile=coverage.out && go tool cover -func=coverage.out | tail -1
+
   lint:
     cmd: golangci-lint run ./...
 

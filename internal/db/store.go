@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 
 	_ "github.com/mattn/go-sqlite3" // register sqlite3 driver
 	"github.com/sdroscher/job-search-pipeline/internal/migrate"
@@ -30,6 +31,30 @@ func NewStore(dsn string) (*Store, error) {
 }
 
 func (s *Store) Close() error { return s.db.Close() }
+
+// StaleJobSet returns a set of job IDs that have at least one stale artifact.
+func (s *Store) StaleJobSet(ctx context.Context, jobs []Job) map[string]bool {
+	stale := make(map[string]bool, len(jobs))
+
+	for _, job := range jobs {
+		artifacts, err := s.ListArtifacts(ctx, job.ID)
+		if err != nil {
+			log.Printf("list artifacts for stale check (job=%s): %v", job.ID, err)
+
+			continue
+		}
+
+		for _, artifact := range artifacts {
+			if artifact.Stale == 1 {
+				stale[job.ID] = true
+
+				break
+			}
+		}
+	}
+
+	return stale
+}
 
 // WithTx runs callback inside a transaction, rolling back on error.
 func (s *Store) WithTx(ctx context.Context, callback func(*Queries) error) error {

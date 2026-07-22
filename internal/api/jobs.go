@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -131,16 +132,20 @@ func (s *Server) handleCreateJob(w http.ResponseWriter, r *http.Request) {
 
 	job, err := s.store.CreateJob(r.Context(), params)
 	if err != nil {
+		if strings.Contains(err.Error(), "UNIQUE constraint") {
+			http.Error(w, "job with this ID already exists", http.StatusConflict)
+
+			return
+		}
+
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 
 		return
 	}
 
-	// Create an initial activity log entry.
-	now := time.Now().UTC().Truncate(24 * time.Hour)
 	_, actErr := s.store.CreateActivityEntry(r.Context(), db.CreateActivityEntryParams{
 		JobID:  job.ID,
-		Date:   now,
+		Date:   time.Now().UTC().Truncate(24 * time.Hour),
 		Action: "Added",
 	})
 	if actErr != nil {

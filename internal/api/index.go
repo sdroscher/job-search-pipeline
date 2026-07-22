@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"log"
 	"net/http"
 
@@ -19,7 +18,7 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	staleJobs := s.staleJobSet(ctx, jobs)
+	staleJobs := s.store.StaleJobSet(ctx, jobs)
 
 	byStage := make(map[string][]db.Job)
 	for _, job := range jobs {
@@ -32,27 +31,4 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 	if renderErr != nil {
 		log.Printf("render: %v", renderErr)
 	}
-}
-
-func (s *Server) staleJobSet(ctx context.Context, jobs []db.Job) map[string]bool {
-	stale := make(map[string]bool)
-
-	for _, job := range jobs {
-		artifacts, err := s.store.ListArtifacts(ctx, job.ID)
-		if err != nil {
-			log.Printf("list artifacts for stale check (job=%s): %v", job.ID, err)
-
-			continue
-		}
-
-		for _, artifact := range artifacts {
-			if artifact.Stale == 1 {
-				stale[job.ID] = true
-
-				break
-			}
-		}
-	}
-
-	return stale
 }

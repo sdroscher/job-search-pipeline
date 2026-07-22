@@ -1,12 +1,14 @@
 package api
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/sdroscher/job-search-pipeline/internal/db"
 	"github.com/sdroscher/job-search-pipeline/internal/panels"
+	"github.com/sdroscher/job-search-pipeline/internal/ui"
 )
 
 // Config holds API-layer configuration.
@@ -80,8 +82,29 @@ func (s *Server) jobRoutes(r chi.Router) {
 	})
 }
 
-func (s *Server) handleBoardPanel(w http.ResponseWriter, _ *http.Request) {
-	w.WriteHeader(http.StatusOK)
+func (s *Server) handleBoardPanel(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	jobs, err := s.store.ListJobs(ctx)
+	if err != nil {
+		http.Error(w, "failed to load jobs", http.StatusInternalServerError)
+
+		return
+	}
+
+	staleJobs := s.store.StaleJobSet(ctx, jobs)
+
+	byStage := make(map[string][]db.Job)
+	for _, job := range jobs {
+		byStage[job.Stage] = append(byStage[job.Stage], job)
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	renderErr := ui.Board(byStage, staleJobs).Render(ctx, w)
+	if renderErr != nil {
+		log.Printf("render board panel: %v", renderErr)
+	}
 }
 
 func (s *Server) handleJobDetailPanel(w http.ResponseWriter, r *http.Request) {
