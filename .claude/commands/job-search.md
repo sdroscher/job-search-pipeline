@@ -8,6 +8,13 @@ Read at skill load time:
 - `BASE_URL`: `${JOB_PIPELINE_URL:-http://localhost:8080}`
 - `OUTPUT_DIR`: `${OUTPUT_DIR:-./output}`
 
+## Tool usage
+
+- **GET requests** → use the `WebFetch` tool (no confirmation prompt)
+- **POST / PUT / PATCH / DELETE** → use `curl` via Bash (pre-approved for localhost)
+- **Writing files** → use the `Write` tool
+- **Never** use Python, Node, or any other interpreter to call the API
+
 ---
 
 ## /job-search init
