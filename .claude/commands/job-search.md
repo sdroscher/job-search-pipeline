@@ -25,7 +25,24 @@ Set up your profile. Run this once.
    - Green flags — what excites you in a role?
    - Red flags — deal-breakers?
    - Writing voice notes — anything specific about your cover letter style? (optional)
-4. Build the profile JSON and PUT to `$BASE_URL/api/profile`.
+4. PUT to `$BASE_URL/api/profile` with `Content-Type: application/json`:
+   ```json
+   {
+     "resume_md": "<resume text>",
+     "cover_letter_sample": "<sample or null>",
+     "salary_min": <number or null>,
+     "salary_max": <number or null>,
+     "salary_target": <number or null>,
+     "remote_pref": "<remote-only|hybrid-ok|open>",
+     "location": "<city, country>",
+     "industries": "<comma-separated or freeform>",
+     "tech_prefs": "<comma-separated or freeform>",
+     "green_flags": "<freeform>",
+     "red_flags": "<freeform>",
+     "writing_voice_md": "<notes or null>"
+   }
+   ```
+   All fields except `resume_md` are optional (omit or null if not provided).
 5. Confirm: "Profile saved. Open http://localhost:8080 to see your board."
 
 ---
