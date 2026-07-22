@@ -1,113 +1,55 @@
 package feature_test
 
 import (
-	"bytes"
-	"context"
-	"encoding/json"
 	"io"
 	"net/http"
 	"testing"
-	"time"
 
-	"github.com/sdroscher/job-search-pipeline/internal/db"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestStaleness_ArtifactFlaggedAfterProfileUpdate(t *testing.T) {
-	ts, store := newServerWithStore(t)
-	ctx := context.Background()
+func TestProfile(t *testing.T) {
+	t.Run("getting a profile when none exists returns 404", func(t *testing.T) {
+		ts := newTestServer(t)
 
-	today := time.Date(2026, 7, 20, 0, 0, 0, 0, time.UTC)
+		resp, err := http.Get(ts.URL + "/api/profile") //nolint:noctx
+		require.NoError(t, err)
+		defer resp.Body.Close()
 
-	_, err := store.CreateJob(ctx, db.CreateJobParams{
-		ID:           "stale-test",
-		Company:      "Acme",
-		Role:         "SWE",
-		Stage:        "Evaluated",
-		Verdict:      "green",
-		Added:        today,
-		LastActivity: today,
+		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 	})
-	require.NoError(t, err)
 
-	putProfile(t, ts.URL, "# Resume v1")
+	t.Run("after a profile is saved it can be retrieved and includes a profile_hash", func(t *testing.T) {
+		ts := newTestServer(t)
+		putProfile(t, ts, "# My Resume")
 
-	profile, err := store.GetProfile(ctx)
-	require.NoError(t, err)
+		profile := getProfile(t, ts)
 
-	_, err = store.CreateArtifact(ctx, db.CreateArtifactParams{
-		JobID:       "stale-test",
-		Type:        "resume",
-		Filepath:    "./output/resume-acme-swe.md",
-		ProfileHash: profile.ProfileHash,
+		assert.Equal(t, "# My Resume", profile["resume_md"])
+		assert.NotEmpty(t, profile["profile_hash"])
 	})
-	require.NoError(t, err)
 
-	// Update profile — should mark artifact stale via handlePutProfile.
-	putProfile(t, ts.URL, "# Resume v2 with new content")
+	t.Run("after a profile update artifacts for existing jobs are marked stale", func(t *testing.T) {
+		ts := newTestServer(t)
+		createJob(t, ts, "stale-profile-job", "StaleCo", "SWE", "Evaluated")
 
-	artifacts, err := store.ListArtifacts(ctx, "stale-test")
-	require.NoError(t, err)
-	require.Len(t, artifacts, 1, "expected 1 artifact")
-	assert.Equal(t, int64(1), artifacts[0].Stale, "artifact should be stale after profile update")
-}
+		profile := putProfile(t, ts, "# Resume v1")
+		hash, _ := profile["profile_hash"].(string)
 
-func TestBoard_ShowsStaleWarning(t *testing.T) {
-	ts, store := newServerWithStore(t)
-	ctx := context.Background()
+		createArtifact(t, ts, "stale-profile-job", "resume", "resume-stale.md", hash)
 
-	today := time.Date(2026, 7, 20, 0, 0, 0, 0, time.UTC)
+		// Update profile — should mark the artifact stale.
+		putProfile(t, ts, "# Resume v2 with new content")
 
-	_, err := store.CreateJob(ctx, db.CreateJobParams{
-		ID:           "stale-board",
-		Company:      "Acme",
-		Role:         "SWE",
-		Stage:        "Evaluated",
-		Verdict:      "green",
-		Added:        today,
-		LastActivity: today,
+		resp, err := http.Get(ts.URL + "/api/jobs/stale-profile-job/artifacts") //nolint:noctx
+		require.NoError(t, err)
+		defer resp.Body.Close()
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+
+		raw, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		// JSON encodes the stale integer column as a number; check the raw response.
+		assert.Contains(t, string(raw), `"stale":1`, "artifact should be stale after profile update")
 	})
-	require.NoError(t, err)
-
-	putProfile(t, ts.URL, "# Resume v1")
-
-	profile, err := store.GetProfile(ctx)
-	require.NoError(t, err)
-
-	_, err = store.CreateArtifact(ctx, db.CreateArtifactParams{
-		JobID:       "stale-board",
-		Type:        "resume",
-		Filepath:    "./output/resume.md",
-		ProfileHash: profile.ProfileHash,
-	})
-	require.NoError(t, err)
-
-	// Update profile — makes artifact stale.
-	putProfile(t, ts.URL, "# Resume v2")
-
-	resp, err := http.Get(ts.URL + "/") //nolint:noctx
-	require.NoError(t, err)
-	defer resp.Body.Close()
-
-	raw, err := io.ReadAll(resp.Body)
-	require.NoError(t, err)
-	assert.Contains(t, string(raw), "⚠", "board should show stale warning for job with outdated artifact")
-}
-
-func putProfile(t *testing.T, baseURL, resume string) {
-	t.Helper()
-
-	body, err := json.Marshal(map[string]any{"resume_md": resume})
-	require.NoError(t, err)
-
-	req, err := http.NewRequest(http.MethodPut, baseURL+"/api/profile", bytes.NewReader(body)) //nolint:noctx
-	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := http.DefaultClient.Do(req)
-	require.NoError(t, err)
-	defer resp.Body.Close()
-
-	require.Equal(t, http.StatusOK, resp.StatusCode)
 }

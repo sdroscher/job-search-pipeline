@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -285,4 +286,73 @@ func TestCreateArtifact_UnknownJob(t *testing.T) {
 	defer resp.Body.Close()
 
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+}
+
+func TestParseDate_InvalidFormat(t *testing.T) {
+	ts, _ := newServer(t)
+
+	body, err := json.Marshal(map[string]any{
+		"id": "x", "company": "X", "role": "SWE", "stage": "Evaluated", "verdict": "green",
+		"added": "not-a-date",
+	})
+	require.NoError(t, err)
+
+	resp, err := http.Post(ts.URL+"/api/jobs", "application/json", bytes.NewReader(body)) //nolint:noctx
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
+func TestCreateJob_DuplicateID(t *testing.T) {
+	ts, _ := newServer(t)
+
+	jobBody, err := json.Marshal(map[string]any{
+		"id": "dup", "company": "X", "role": "SWE", "stage": "Evaluated", "verdict": "green",
+	})
+	require.NoError(t, err)
+
+	resp1, err := http.Post(ts.URL+"/api/jobs", "application/json", bytes.NewReader(jobBody)) //nolint:noctx
+	require.NoError(t, err)
+	resp1.Body.Close()
+	require.Equal(t, http.StatusCreated, resp1.StatusCode)
+
+	resp2, err := http.Post(ts.URL+"/api/jobs", "application/json", bytes.NewReader(jobBody)) //nolint:noctx
+	require.NoError(t, err)
+	resp2.Body.Close()
+	assert.Equal(t, http.StatusConflict, resp2.StatusCode)
+}
+
+func TestBoardPanel_ReturnsHTMLFragment(t *testing.T) {
+	ts, _ := newServer(t)
+
+	resp, err := http.Get(ts.URL + "/panels/board") //nolint:noctx
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	raw, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	assert.Contains(t, string(raw), "Evaluated")
+}
+
+func TestCreateActivity_HappyPath(t *testing.T) {
+	ts, store := newServer(t)
+	now := time.Now().UTC().Truncate(24 * time.Hour)
+
+	_, err := store.CreateJob(context.Background(), db.CreateJobParams{
+		ID: "j1", Company: "Acme", Role: "SWE", Stage: "Evaluated", Verdict: "green",
+		Added: now, LastActivity: now,
+	})
+	require.NoError(t, err)
+
+	body, err := json.Marshal(map[string]any{"action": "Interviewed", "notes": "went well"})
+	require.NoError(t, err)
+
+	resp, err := http.Post(ts.URL+"/api/jobs/j1/activity", "application/json", bytes.NewReader(body)) //nolint:noctx
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusCreated, resp.StatusCode)
 }

@@ -2,6 +2,7 @@ package db_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -56,4 +57,37 @@ func (s *StoreSuite) TestCreateAndListJobs() {
 	s.Require().NoError(err, "ListJobs")
 	s.Require().Len(jobs, 1)
 	s.Equal("Acme", jobs[0].Company)
+}
+
+func (s *StoreSuite) TestWithTx_Commit() {
+	ctx := context.Background()
+	now := time.Date(2026, 7, 20, 0, 0, 0, 0, time.UTC)
+
+	err := s.store.WithTx(ctx, func(q *db.Queries) error {
+		_, txErr := q.CreateJob(ctx, db.CreateJobParams{
+			ID: "tx-job", Company: "TxCo", Role: "Dev", Stage: "Evaluated", Verdict: "green",
+			Added: now, LastActivity: now,
+		})
+
+		return txErr
+	})
+	s.Require().NoError(err)
+
+	jobs, err := s.store.ListJobs(ctx)
+	s.Require().NoError(err)
+	s.Require().Len(jobs, 1)
+	s.Equal("tx-job", jobs[0].ID)
+}
+
+func (s *StoreSuite) TestWithTx_Rollback() {
+	ctx := context.Background()
+
+	err := s.store.WithTx(ctx, func(_ *db.Queries) error {
+		return errors.New("intentional failure")
+	})
+	s.Require().Error(err)
+
+	jobs, err := s.store.ListJobs(ctx)
+	s.Require().NoError(err)
+	s.Empty(jobs, "rollback should leave no jobs")
 }

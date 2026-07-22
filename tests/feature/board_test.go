@@ -1,38 +1,59 @@
 package feature_test
 
 import (
-	"io"
-	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-func newTestServer(t *testing.T) *httptest.Server {
-	t.Helper()
-	ts, _ := newServerWithStore(t)
+func TestBoard(t *testing.T) {
+	t.Run("empty board shows all 7 stage columns", func(t *testing.T) {
+		ts := newTestServer(t)
+		body := getBoard(t, ts)
 
-	return ts
-}
+		for _, stage := range []string{
+			"Evaluated", "Applied", "AI Assessment", "Screening",
+			"Interviewing", "Final Round", "Offer",
+		} {
+			assert.Contains(t, body, stage, "board missing column %q", stage)
+		}
+	})
 
-func TestBoard_EmptyRendersAllColumns(t *testing.T) {
-	ts := newTestServer(t)
+	t.Run("after a job is added it appears in its stage column", func(t *testing.T) {
+		ts := newTestServer(t)
+		createJob(t, ts, "board-job-1", "Acme Corp", "Staff SWE", "Applied")
 
-	resp, err := http.Get(ts.URL + "/") //nolint:noctx
-	require.NoError(t, err)
+		body := getBoard(t, ts)
 
-	defer resp.Body.Close()
+		assert.Contains(t, body, "Acme Corp")
+	})
 
-	require.Equal(t, http.StatusOK, resp.StatusCode)
+	t.Run("stale warning appears after profile update", func(t *testing.T) {
+		ts := newTestServer(t)
+		createJob(t, ts, "stale-board-job", "Acme", "SWE", "Evaluated")
 
-	raw, err := io.ReadAll(resp.Body)
-	require.NoError(t, err)
+		profile := putProfile(t, ts, "# Resume v1")
+		hash, _ := profile["profile_hash"].(string)
 
-	body := string(raw)
+		createArtifact(t, ts, "stale-board-job", "resume", "resume-acme-swe.md", hash)
 
-	for _, stage := range []string{"Evaluated", "Applied", "AI Assessment", "Screening", "Interviewing", "Final Round", "Offer"} {
-		assert.Contains(t, body, stage, "board missing column %q", stage)
-	}
+		// Update profile — makes the artifact stale.
+		putProfile(t, ts, "# Resume v2 with new content")
+
+		body := getBoard(t, ts)
+
+		assert.Contains(t, body, "⚠", "board should show stale warning for job with outdated artifact")
+	})
+
+	t.Run("GET /panels/board returns HTML fragment containing stage columns", func(t *testing.T) {
+		ts := newTestServer(t)
+		body := getBoardPanel(t, ts)
+
+		for _, stage := range []string{
+			"Evaluated", "Applied", "AI Assessment", "Screening",
+			"Interviewing", "Final Round", "Offer",
+		} {
+			assert.Contains(t, body, stage, "board panel missing column %q", stage)
+		}
+	})
 }
