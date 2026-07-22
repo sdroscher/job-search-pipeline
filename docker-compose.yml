@@ -1,0 +1,13 @@
+services:
+  app:
+    build: .
+    ports:
+      - "${PORT:-8080}:8080"
+    volumes:
+      - ./data:/data
+      - ./output:/output
+    environment:
+      DATABASE_URL: /data/pipeline.db
+      OUTPUT_DIR: /output
+      PORT: "8080"
+    restart: unless-stopped
