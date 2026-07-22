@@ -4,6 +4,7 @@ job-search-pipeline
 .idea/
 data/
 bin/
+*.pdf
 coverage.out
 coverage.filtered.out
 
