@@ -10,15 +10,19 @@ import (
 )
 
 var (
-	ashbyJobRe        = regexp.MustCompile(`jobs\.ashbyhq\.com/([^/]+)/([a-f0-9-]+)`)
-	errBadAshbyURL    = errors.New("unrecognised ashby URL")
-	errAshbyNotFound  = errors.New("job not found in ashby board")
-	errAshbyAPIStatus = errors.New("ashby api non-200 status")
+	ashbyJobRe       = regexp.MustCompile(`jobs\.ashbyhq\.com/([^/]+)/([a-f0-9-]+)`)
+	errBadAshbyURL   = errors.New("unrecognised ashby URL")
+	errAshbyNotFound = errors.New("job not found in ashby board")
 )
+
+type ashbyStatusError struct{ code int }
+
+func (e *ashbyStatusError) Error() string { return fmt.Sprintf("ashby api status %d", e.code) }
 
 const ashbyBoardAPIBase = "https://api.ashbyhq.com/posting-api/job-board"
 
-// FetchAshby parses an Ashby-hosted job posting URL via the public board API.
+// FetchAshby parses an Ashby-hosted job posting URL via the public board API,
+// falling back to HTML scraping if the board is access-restricted (401/403).
 func FetchAshby(ctx context.Context, rawURL string) (*ParsedJob, error) {
 	match := ashbyJobRe.FindStringSubmatch(rawURL)
 	if match == nil {
@@ -27,7 +31,14 @@ func FetchAshby(ctx context.Context, rawURL string) (*ParsedJob, error) {
 
 	org, jobID := match[1], match[2]
 
-	return FetchAshbyFromAPI(ctx, ashbyBoardAPIBase, rawURL, org, jobID)
+	job, err := FetchAshbyFromAPI(ctx, ashbyBoardAPIBase, rawURL, org, jobID)
+
+	var statusErr *ashbyStatusError
+	if errors.As(err, &statusErr) && (statusErr.code == http.StatusUnauthorized || statusErr.code == http.StatusForbidden) {
+		return ScrapeHTML(ctx, rawURL)
+	}
+
+	return job, err
 }
 
 type ashbyBoard struct {
@@ -57,7 +68,7 @@ func FetchAshbyFromAPI(ctx context.Context, boardAPIBase, sourceURL, org, jobID 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("%w: %d", errAshbyAPIStatus, resp.StatusCode)
+		return nil, &ashbyStatusError{code: resp.StatusCode}
 	}
 
 	var board ashbyBoard
