@@ -1,6 +1,7 @@
 job-search-pipeline
 .superpowers/
 .env
+.idea/
 data/
 bin/
 coverage.out
