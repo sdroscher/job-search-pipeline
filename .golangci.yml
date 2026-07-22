@@ -66,6 +66,8 @@ linters:
       - builtin$
       - examples$
       - generated/
+      - .*_templ\.go
+      - internal/db/(db|models|queries\.sql)\.go
 formatters:
   enable:
     - gci
@@ -85,3 +87,5 @@ formatters:
       - builtin$
       - examples$
       - generated/
+      - .*_templ\.go
+      - internal/db/(db|models|queries\.sql)\.go

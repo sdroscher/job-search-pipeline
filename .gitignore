@@ -3,3 +3,13 @@ job-search-pipeline
 .env
 data/
 bin/
+coverage.out
+coverage.filtered.out
+
+# sqlc-generated
+internal/db/db.go
+internal/db/models.go
+internal/db/queries.sql.go
+
+# templ-generated
+internal/ui/*_templ.go
