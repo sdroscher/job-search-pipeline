@@ -7,6 +7,9 @@ templ Page(title string) {
 			<meta charset="UTF-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 			<title>{ title } — Job Pipeline</title>
+			<script>
+				(function(){var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);})();
+			</script>
 			<link rel="stylesheet" href="/static/app.css"/>
 			<script src="/static/htmx.min.js"></script>
 			<script src="/static/sortable.min.js"></script>
@@ -14,10 +17,27 @@ templ Page(title string) {
 		<body>
 			<header class="app-header">
 				<span class="app-logo">Job Pipeline</span>
+				<button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme"></button>
 			</header>
 			<main class="app-main">
 				{ children... }
 			</main>
+			<script>
+				function isDark() {
+					var t = document.documentElement.getAttribute('data-theme');
+					return t ? t === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+				}
+				function updateIcon() {
+					document.getElementById('theme-toggle').textContent = isDark() ? '☀' : '🌙';
+				}
+				document.getElementById('theme-toggle').addEventListener('click', function() {
+					var next = isDark() ? 'light' : 'dark';
+					document.documentElement.setAttribute('data-theme', next);
+					localStorage.setItem('theme', next);
+					updateIcon();
+				});
+				updateIcon();
+			</script>
 		</body>
 	</html>
 }

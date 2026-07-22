@@ -70,9 +70,27 @@ html, body {
 
 .app-logo {
   color: var(--header-fg);
-  font-size: 15px;
+  font-size: 20px;
   font-weight: 700;
-  letter-spacing: -0.3px;
+  letter-spacing: -0.5px;
+}
+
+.theme-toggle {
+  margin-left: auto;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  padding: 4px 6px;
+  border-radius: 4px;
+  color: var(--header-fg);
+  opacity: 0.7;
+}
+
+.theme-toggle:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, .12);
 }
 
 /* ── Main ── */
