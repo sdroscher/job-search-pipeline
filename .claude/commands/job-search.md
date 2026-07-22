@@ -11,9 +11,21 @@ Read at skill load time:
 ## Tool usage
 
 - **GET requests** → use the `WebFetch` tool (no confirmation prompt)
-- **POST / PUT / PATCH / DELETE** → use `curl` via Bash (pre-approved for localhost)
+- **POST / PUT / PATCH / DELETE** → use `curl` via Bash exactly as shown below
 - **Writing files** → use the `Write` tool
 - **Never** use Python, Node, or any other interpreter to call the API
+
+### curl rules (important — deviating causes confirmation prompts)
+
+Always use this exact form — no `cd` prefix, no temp files, no pipes to `jq`:
+
+```bash
+curl -s -X POST "$BASE_URL/api/jobs" \
+  -H "Content-Type: application/json" \
+  -d '{"id":"...","company":"..."}'
+```
+
+Read the JSON response directly from curl's stdout. Do not redirect to files or pipe through `jq`.
 
 ---
 
