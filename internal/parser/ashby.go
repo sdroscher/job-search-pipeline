@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -13,11 +12,13 @@ import (
 var (
 	ashbyJobRe        = regexp.MustCompile(`jobs\.ashbyhq\.com/([^/]+)/([a-f0-9-]+)`)
 	errBadAshbyURL    = errors.New("unrecognised ashby URL")
-	errAshbyFailed    = errors.New("ashby api returned success=false")
+	errAshbyNotFound  = errors.New("job not found in ashby board")
 	errAshbyAPIStatus = errors.New("ashby api non-200 status")
 )
 
-// FetchAshby parses an Ashby-hosted job posting URL.
+const ashbyBoardAPIBase = "https://api.ashbyhq.com/posting-api/job-board"
+
+// FetchAshby parses an Ashby-hosted job posting URL via the public board API.
 func FetchAshby(ctx context.Context, rawURL string) (*ParsedJob, error) {
 	match := ashbyJobRe.FindStringSubmatch(rawURL)
 	if match == nil {
@@ -26,29 +27,29 @@ func FetchAshby(ctx context.Context, rawURL string) (*ParsedJob, error) {
 
 	org, jobID := match[1], match[2]
 
-	return FetchAshbyFromAPI(ctx, "https://api.ashbyhq.com/jobPosting.info", rawURL, org, jobID)
+	return FetchAshbyFromAPI(ctx, ashbyBoardAPIBase, rawURL, org, jobID)
 }
 
-type ashbyRequest struct {
-	OrgName string `json:"organizationHostedJobsPageName"` //nolint:tagliatelle
-	JobID   string `json:"jobPostingId"`                   //nolint:tagliatelle
+type ashbyBoard struct {
+	Jobs []ashbyPosting `json:"jobs"`
 }
 
-// FetchAshbyFromAPI fetches an Ashby job from an injectable API base URL (used in tests).
-func FetchAshbyFromAPI(ctx context.Context, apiBase, sourceURL, org, jobID string) (*ParsedJob, error) {
-	payload, err := json.Marshal(ashbyRequest{OrgName: org, JobID: jobID})
-	if err != nil {
-		return nil, fmt.Errorf("marshal request: %w", err)
-	}
+type ashbyPosting struct {
+	ID              string `json:"id"`
+	Title           string `json:"title"`
+	LocationName    string `json:"locationName"`
+	DescriptionHTML string `json:"descriptionHtml"` //nolint:tagliatelle
+}
 
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, apiBase, bytes.NewReader(payload))
+// FetchAshbyFromAPI fetches from GET {boardAPIBase}/{org} and finds the job by ID.
+// boardAPIBase is injectable for tests.
+func FetchAshbyFromAPI(ctx context.Context, boardAPIBase, sourceURL, org, jobID string) (*ParsedJob, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, boardAPIBase+"/"+org, nil)
 	if err != nil {
 		return nil, fmt.Errorf("new request: %w", err)
 	}
 
-	httpReq.Header.Set("Content-Type", "application/json")
-
-	resp, err := http.DefaultClient.Do(httpReq)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("ashby api: %w", err)
 	}
@@ -59,35 +60,26 @@ func FetchAshbyFromAPI(ctx context.Context, apiBase, sourceURL, org, jobID strin
 		return nil, fmt.Errorf("%w: %d", errAshbyAPIStatus, resp.StatusCode)
 	}
 
-	var data struct {
-		Success bool `json:"success"`
-		Results struct {
-			JobPosting struct {
-				Title           string `json:"title"`
-				DescriptionHTML string `json:"descriptionHtml"` //nolint:tagliatelle
-				JobLocation     struct {
-					LocationStr string `json:"locationStr"` //nolint:tagliatelle
-				} `json:"jobLocation"` //nolint:tagliatelle
-			} `json:"jobPosting"` //nolint:tagliatelle
-		} `json:"results"`
-	}
+	var board ashbyBoard
 
-	decodeErr := json.NewDecoder(resp.Body).Decode(&data)
+	decodeErr := json.NewDecoder(resp.Body).Decode(&board)
 	if decodeErr != nil {
 		return nil, fmt.Errorf("decode: %w", decodeErr)
 	}
 
-	if !data.Success {
-		return nil, errAshbyFailed
+	for _, p := range board.Jobs {
+		if p.ID != jobID {
+			continue
+		}
+
+		return &ParsedJob{
+			Title:     p.Title,
+			Location:  p.LocationName,
+			BodyMD:    htmlToMD(p.DescriptionHTML),
+			Source:    string(ATSAshby),
+			SourceURL: sourceURL,
+		}, nil
 	}
 
-	posting := data.Results.JobPosting
-
-	return &ParsedJob{
-		Title:     posting.Title,
-		Location:  posting.JobLocation.LocationStr,
-		BodyMD:    htmlToMD(posting.DescriptionHTML),
-		Source:    string(ATSAshby),
-		SourceURL: sourceURL,
-	}, nil
+	return nil, fmt.Errorf("%w: %s", errAshbyNotFound, jobID)
 }

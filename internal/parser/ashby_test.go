@@ -12,12 +12,12 @@ import (
 func (s *ParserSuite) TestFetchAshby() {
 	mock := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(map[string]any{ //nolint:errcheck
-			"success": true,
-			"results": map[string]any{
-				"jobPosting": map[string]any{
+			"jobs": []map[string]any{
+				{
+					"id":              "abc-123",
 					"title":           "Staff Software Engineer",
 					"descriptionHtml": "<p>We are building great things.</p>",
-					"jobLocation":     map[string]any{"locationStr": "Remote, US"},
+					"locationName":    "Remote, US",
 				},
 			},
 		})
@@ -32,9 +32,9 @@ func (s *ParserSuite) TestFetchAshby() {
 	s.Equal("Remote, US", job.Location)
 }
 
-func (s *ParserSuite) TestFetchAshbyFromAPI_SuccessFalse() {
+func (s *ParserSuite) TestFetchAshbyFromAPI_NotFound() {
 	mock := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		json.NewEncoder(w).Encode(map[string]any{"success": false}) //nolint:errcheck
+		json.NewEncoder(w).Encode(map[string]any{"jobs": []any{}}) //nolint:errcheck
 	}))
 	defer mock.Close()
 
