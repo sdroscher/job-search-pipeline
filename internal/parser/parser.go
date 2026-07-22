@@ -1,6 +1,9 @@
 package parser
 
-import "strings"
+import (
+	"context"
+	"strings"
+)
 
 // ParsedJob holds structured data extracted from any ATS.
 type ParsedJob struct {
@@ -42,17 +45,17 @@ func DetectATS(rawURL string) ATSType {
 }
 
 // Parse fetches and parses a job posting URL, delegating to the appropriate ATS parser.
-func Parse(rawURL string) (*ParsedJob, error) {
+func Parse(ctx context.Context, rawURL string) (*ParsedJob, error) {
 	switch DetectATS(rawURL) {
 	case ATSGreenhouse:
-		return FetchGreenhouse(rawURL)
+		return FetchGreenhouse(ctx, rawURL)
 	case ATSAshby:
-		return FetchAshby(rawURL)
+		return FetchAshby(ctx, rawURL)
 	case ATSLever:
-		return FetchLever(rawURL)
+		return FetchLever(ctx, rawURL)
 	case ATSHTML:
-		return ScrapeHTML(rawURL)
+		return ScrapeHTML(ctx, rawURL)
 	}
 
-	return ScrapeHTML(rawURL)
+	return ScrapeHTML(ctx, rawURL)
 }

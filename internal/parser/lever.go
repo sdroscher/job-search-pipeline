@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,7 +17,7 @@ var (
 )
 
 // FetchLever parses a Lever-hosted job posting URL.
-func FetchLever(rawURL string) (*ParsedJob, error) {
+func FetchLever(ctx context.Context, rawURL string) (*ParsedJob, error) {
 	match := leverJobRe.FindStringSubmatch(rawURL)
 	if match == nil {
 		return nil, fmt.Errorf("%s: %w", rawURL, errBadLeverURL)
@@ -25,12 +26,17 @@ func FetchLever(rawURL string) (*ParsedJob, error) {
 	org, jobID := match[1], match[2]
 	apiURL := fmt.Sprintf("https://api.lever.co/v0/postings/%s/%s?mode=json", org, jobID)
 
-	return FetchLeverFromAPI(apiURL, rawURL)
+	return FetchLeverFromAPI(ctx, apiURL, rawURL)
 }
 
 // FetchLeverFromAPI fetches a Lever job from an injectable API URL (used in tests).
-func FetchLeverFromAPI(apiURL, sourceURL string) (*ParsedJob, error) {
-	resp, err := http.Get(apiURL) //nolint:noctx,gosec
+func FetchLeverFromAPI(ctx context.Context, apiURL, sourceURL string) (*ParsedJob, error) {
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("new request: %w", err)
+	}
+
+	resp, err := http.DefaultClient.Do(httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("lever api: %w", err)
 	}

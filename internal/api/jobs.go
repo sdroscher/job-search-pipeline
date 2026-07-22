@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"io"
 	"log"
 	"net/http"
 	"time"
@@ -24,9 +25,9 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 	}
 }
 
-// readJSON decodes the request body into v.
+// readJSON decodes the request body into v, limiting reads to 10 MB.
 func readJSON(r *http.Request, v any) error {
-	return json.NewDecoder(r.Body).Decode(v)
+	return json.NewDecoder(io.LimitReader(r.Body, 10<<20)).Decode(v)
 }
 
 // parseDate parses a "YYYY-MM-DD" string; returns today (UTC, midnight) if s is empty.
@@ -197,9 +198,20 @@ func (s *Server) handleUpdateJob(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleDeleteJob(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
-	err := s.store.DeleteJob(r.Context(), id)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	_, getErr := s.store.GetJob(r.Context(), id)
+	if getErr != nil {
+		if errors.Is(getErr, sql.ErrNoRows) {
+			http.Error(w, "not found", http.StatusNotFound)
+		} else {
+			http.Error(w, getErr.Error(), http.StatusInternalServerError)
+		}
+
+		return
+	}
+
+	delErr := s.store.DeleteJob(r.Context(), id)
+	if delErr != nil {
+		http.Error(w, delErr.Error(), http.StatusInternalServerError)
 
 		return
 	}

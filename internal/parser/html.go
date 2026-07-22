@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -12,13 +13,18 @@ import (
 var errHTMLStatus = errors.New("html scrape: unexpected status")
 
 // ScrapeHTML fetches and scrapes an arbitrary HTML job posting page.
-func ScrapeHTML(rawURL string) (*ParsedJob, error) {
-	return ScrapeHTMLFromURL(rawURL, rawURL)
+func ScrapeHTML(ctx context.Context, rawURL string) (*ParsedJob, error) {
+	return ScrapeHTMLFromURL(ctx, rawURL, rawURL)
 }
 
 // ScrapeHTMLFromURL fetches from fetchURL and records sourceURL as the origin (used in tests).
-func ScrapeHTMLFromURL(fetchURL, sourceURL string) (*ParsedJob, error) {
-	resp, err := http.Get(fetchURL) //nolint:noctx,gosec
+func ScrapeHTMLFromURL(ctx context.Context, fetchURL, sourceURL string) (*ParsedJob, error) {
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, fetchURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("new request: %w", err)
+	}
+
+	resp, err := http.DefaultClient.Do(httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("fetch: %w", err)
 	}

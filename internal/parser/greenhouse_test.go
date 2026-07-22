@@ -1,6 +1,7 @@
 package parser_test
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -22,6 +23,7 @@ func (s *ParserSuite) TestFetchGreenhouse() {
 	defer mock.Close()
 
 	job, err := parser.FetchGreenhouseFromAPI(
+		context.Background(),
 		mock.URL+"/v1/boards/acme/jobs/123",
 		"https://boards.greenhouse.io/acme/jobs/123",
 	)
@@ -40,12 +42,12 @@ func (s *ParserSuite) TestFetchGreenhouseFromAPI_Non200() {
 	}))
 	defer mock.Close()
 
-	_, err := parser.FetchGreenhouseFromAPI(mock.URL, "https://boards.greenhouse.io/acme/jobs/1")
+	_, err := parser.FetchGreenhouseFromAPI(context.Background(), mock.URL, "https://boards.greenhouse.io/acme/jobs/1")
 	s.Require().Error(err)
 }
 
 func (s *ParserSuite) TestFetchGreenhouse_URLMismatch() {
-	_, err := parser.FetchGreenhouse("https://not-a-greenhouse-url.com/jobs/123")
+	_, err := parser.FetchGreenhouse(context.Background(), "https://not-a-greenhouse-url.com/jobs/123")
 	s.Require().Error(err)
 }
 

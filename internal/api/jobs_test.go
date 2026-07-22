@@ -203,6 +203,67 @@ func TestCreateActivity_UnknownJob(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 }
 
+func TestDeleteJob_NotFound(t *testing.T) {
+	ts, _ := newServer(t)
+
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodDelete, ts.URL+"/api/jobs/nonexistent", nil)
+	require.NoError(t, err)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+}
+
+func TestListArtifacts_UnknownJob(t *testing.T) {
+	ts, _ := newServer(t)
+
+	resp, err := http.Get(ts.URL + "/api/jobs/nonexistent/artifacts") //nolint:noctx
+	require.NoError(t, err)
+
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+}
+
+func TestCreateArtifact_PathTraversal(t *testing.T) {
+	ts, store := newServer(t)
+	ctx := context.Background()
+	today := time.Now().UTC().Truncate(24 * time.Hour)
+
+	_, err := store.CreateJob(ctx, db.CreateJobParams{
+		ID:           "job-path",
+		Company:      "Acme",
+		Role:         "SWE",
+		Stage:        "Evaluated",
+		Verdict:      "green",
+		Added:        today,
+		LastActivity: today,
+	})
+	require.NoError(t, err)
+
+	body, err := json.Marshal(map[string]any{
+		"type":         "cover_letter",
+		"filepath":     "/etc/evil",
+		"profile_hash": "abc123",
+	})
+	require.NoError(t, err)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, ts.URL+"/api/jobs/job-path/artifacts", bytes.NewReader(body))
+	require.NoError(t, err)
+
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
 func TestCreateArtifact_UnknownJob(t *testing.T) {
 	ts, _ := newServer(t)
 

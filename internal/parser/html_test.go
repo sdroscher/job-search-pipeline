@@ -1,6 +1,7 @@
 package parser_test
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -18,7 +19,7 @@ func (s *ParserSuite) TestScrapeHTML() {
 	}))
 	defer mock.Close()
 
-	job, err := parser.ScrapeHTMLFromURL(mock.URL, mock.URL)
+	job, err := parser.ScrapeHTMLFromURL(context.Background(), mock.URL, mock.URL)
 	s.Require().NoError(err)
 	s.Require().NotNil(job)
 	s.Contains(job.BodyMD, "Acme Corp")
@@ -32,7 +33,7 @@ func (s *ParserSuite) TestScrapeHTMLFromURL_Non200() {
 	}))
 	defer mock.Close()
 
-	_, err := parser.ScrapeHTMLFromURL(mock.URL, mock.URL)
+	_, err := parser.ScrapeHTMLFromURL(context.Background(), mock.URL, mock.URL)
 	s.Require().Error(err)
 }
 

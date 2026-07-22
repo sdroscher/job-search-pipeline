@@ -2,6 +2,7 @@ package parser
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -17,7 +18,7 @@ var (
 )
 
 // FetchAshby parses an Ashby-hosted job posting URL.
-func FetchAshby(rawURL string) (*ParsedJob, error) {
+func FetchAshby(ctx context.Context, rawURL string) (*ParsedJob, error) {
 	match := ashbyJobRe.FindStringSubmatch(rawURL)
 	if match == nil {
 		return nil, fmt.Errorf("%s: %w", rawURL, errBadAshbyURL)
@@ -25,7 +26,7 @@ func FetchAshby(rawURL string) (*ParsedJob, error) {
 
 	org, jobID := match[1], match[2]
 
-	return FetchAshbyFromAPI("https://api.ashbyhq.com/jobPosting.info", rawURL, org, jobID)
+	return FetchAshbyFromAPI(ctx, "https://api.ashbyhq.com/jobPosting.info", rawURL, org, jobID)
 }
 
 type ashbyRequest struct {
@@ -34,13 +35,20 @@ type ashbyRequest struct {
 }
 
 // FetchAshbyFromAPI fetches an Ashby job from an injectable API base URL (used in tests).
-func FetchAshbyFromAPI(apiBase, sourceURL, org, jobID string) (*ParsedJob, error) {
+func FetchAshbyFromAPI(ctx context.Context, apiBase, sourceURL, org, jobID string) (*ParsedJob, error) {
 	payload, err := json.Marshal(ashbyRequest{OrgName: org, JobID: jobID})
 	if err != nil {
 		return nil, fmt.Errorf("marshal request: %w", err)
 	}
 
-	resp, err := http.Post(apiBase, "application/json", bytes.NewReader(payload)) //nolint:noctx,gosec
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, apiBase, bytes.NewReader(payload))
+	if err != nil {
+		return nil, fmt.Errorf("new request: %w", err)
+	}
+
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("ashby api: %w", err)
 	}

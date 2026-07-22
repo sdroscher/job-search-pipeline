@@ -26,7 +26,7 @@ func (s *Server) handleParse(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	job, err := parser.Parse(req.URL)
+	job, err := parser.Parse(r.Context(), req.URL)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 

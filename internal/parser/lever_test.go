@@ -1,6 +1,7 @@
 package parser_test
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -21,7 +22,7 @@ func (s *ParserSuite) TestFetchLever() {
 	}))
 	defer mock.Close()
 
-	job, err := parser.FetchLeverFromAPI(mock.URL, "https://jobs.lever.co/acme/abc-123")
+	job, err := parser.FetchLeverFromAPI(context.Background(), mock.URL, "https://jobs.lever.co/acme/abc-123")
 	s.Require().NoError(err)
 	s.Require().NotNil(job)
 	s.Equal("Principal Engineer", job.Title)
@@ -37,7 +38,7 @@ func (s *ParserSuite) TestFetchLeverFromAPI_Non200() {
 	}))
 	defer mock.Close()
 
-	_, err := parser.FetchLeverFromAPI(mock.URL, "https://jobs.lever.co/acme/abc-123")
+	_, err := parser.FetchLeverFromAPI(context.Background(), mock.URL, "https://jobs.lever.co/acme/abc-123")
 	s.Require().Error(err)
 }
 

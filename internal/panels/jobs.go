@@ -28,7 +28,11 @@ func (h *JobPanelHandler) HandleDetail(w http.ResponseWriter, r *http.Request) {
 
 	job, err := h.store.GetJob(r.Context(), id)
 	if err != nil {
-		http.Error(w, "not found", http.StatusNotFound)
+		if errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "not found", http.StatusNotFound)
+		} else {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 
 		return
 	}

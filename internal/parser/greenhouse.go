@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,7 +17,7 @@ var (
 )
 
 // FetchGreenhouse parses a Greenhouse job board URL using the public boards API.
-func FetchGreenhouse(rawURL string) (*ParsedJob, error) {
+func FetchGreenhouse(ctx context.Context, rawURL string) (*ParsedJob, error) {
 	match := ghJobRe.FindStringSubmatch(rawURL)
 	if match == nil {
 		return nil, fmt.Errorf("%s: %w", rawURL, errUnrecognisedGHURL)
@@ -25,12 +26,17 @@ func FetchGreenhouse(rawURL string) (*ParsedJob, error) {
 	board, jobID := match[1], match[2]
 	apiURL := fmt.Sprintf("https://boards-api.greenhouse.io/v1/boards/%s/jobs/%s?questions=true", board, jobID)
 
-	return FetchGreenhouseFromAPI(apiURL, rawURL)
+	return FetchGreenhouseFromAPI(ctx, apiURL, rawURL)
 }
 
 // FetchGreenhouseFromAPI fetches a Greenhouse job from an injectable API URL (used in tests).
-func FetchGreenhouseFromAPI(apiURL, sourceURL string) (*ParsedJob, error) {
-	resp, err := http.Get(apiURL) //nolint:noctx,gosec
+func FetchGreenhouseFromAPI(ctx context.Context, apiURL, sourceURL string) (*ParsedJob, error) {
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("new request: %w", err)
+	}
+
+	resp, err := http.DefaultClient.Do(httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("greenhouse api: %w", err)
 	}

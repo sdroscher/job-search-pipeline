@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/sdroscher/job-search-pipeline/internal/db"
@@ -19,6 +20,17 @@ type createArtifactRequest struct {
 
 func (s *Server) handleListArtifacts(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
+
+	_, err := s.store.GetJob(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "job not found", http.StatusNotFound)
+		} else {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+
+		return
+	}
 
 	artifacts, err := s.store.ListArtifacts(r.Context(), id)
 	if err != nil {
@@ -63,8 +75,16 @@ func (s *Server) handleCreateArtifact(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// req.Filepath is trusted input from the Claude skill (CLI), not from untrusted
-	// external users, so path traversal via this field is acceptable.
+	// Validate that the requested filepath is contained within the configured output directory.
+	cleanPath := filepath.Clean(req.Filepath)
+	outputDir := filepath.Clean(s.config.OutputDir)
+
+	if !strings.HasPrefix(cleanPath, outputDir+string(filepath.Separator)) && cleanPath != outputDir {
+		http.Error(w, "filepath must be under output directory", http.StatusBadRequest)
+
+		return
+	}
+
 	mkdirErr := os.MkdirAll(filepath.Dir(req.Filepath), 0o750)
 	if mkdirErr != nil {
 		http.Error(w, "cannot create output dir", http.StatusInternalServerError)

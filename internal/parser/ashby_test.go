@@ -1,6 +1,7 @@
 package parser_test
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -23,7 +24,7 @@ func (s *ParserSuite) TestFetchAshby() {
 	}))
 	defer mock.Close()
 
-	job, err := parser.FetchAshbyFromAPI(mock.URL, "https://jobs.ashbyhq.com/acme/abc-123", "acme", "abc-123")
+	job, err := parser.FetchAshbyFromAPI(context.Background(), mock.URL, "https://jobs.ashbyhq.com/acme/abc-123", "acme", "abc-123")
 	s.Require().NoError(err)
 	s.Require().NotNil(job)
 	s.Equal("Staff Software Engineer", job.Title)
@@ -37,7 +38,7 @@ func (s *ParserSuite) TestFetchAshbyFromAPI_SuccessFalse() {
 	}))
 	defer mock.Close()
 
-	_, err := parser.FetchAshbyFromAPI(mock.URL, "https://jobs.ashbyhq.com/acme/abc-123", "acme", "abc-123")
+	_, err := parser.FetchAshbyFromAPI(context.Background(), mock.URL, "https://jobs.ashbyhq.com/acme/abc-123", "acme", "abc-123")
 	s.Require().Error(err)
 }
 
