@@ -212,9 +212,23 @@ html, body {
   color: var(--text-2);
   margin-top: 2px;
   line-height: 1.3;
-  white-space: nowrap;
+}
+
+.job-card-id {
+  font-size: 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--text-2);
+  opacity: 0.6;
+  margin-top: 3px;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.job-card-salary {
+  font-size: 11px;
+  color: var(--text-2);
+  margin-top: 4px;
 }
 
 .job-card-meta {
@@ -223,6 +237,13 @@ html, body {
   gap: 5px;
   margin-top: 8px;
   line-height: 1;
+}
+
+.job-card-date {
+  font-size: 11px;
+  color: var(--text-2);
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ── Verdict / score / stale ── */
@@ -322,7 +343,9 @@ html, body {
 }
 
 .detail-section {
-  margin-top: 2px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
 }
 
 .detail-section h3 {
@@ -333,6 +356,83 @@ html, body {
   color: var(--text-2);
   margin-bottom: 10px;
 }
+
+/* ── Detail fit score ── */
+.detail-fit {
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+
+.detail-fit-green { background: rgba(54,179,126,.15); color: #36b37e; }
+.detail-fit-yellow { background: rgba(245,158,11,.15); color: #d97706; }
+.detail-fit-red { background: rgba(222,53,11,.15); color: #de350b; }
+
+.detail-remote {
+  font-size: 12px;
+  background: var(--column-bg);
+  color: var(--text-2);
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+
+.detail-source-link {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 12px;
+  color: #0065ff;
+  text-decoration: none;
+}
+
+.detail-source-link:hover { text-decoration: underline; }
+
+/* ── Eval lists (positives / concerns) ── */
+.eval-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.eval-list li {
+  display: flex;
+  gap: 8px;
+  color: var(--text);
+}
+
+.eval-list li::before {
+  flex-shrink: 0;
+  font-weight: 700;
+  margin-top: 1px;
+}
+
+.eval-positives li::before { content: '✓'; color: #36b37e; }
+.eval-concerns  li::before { content: '!'; color: #d97706; }
+
+/* ── Company values ── */
+.company-values {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.company-value {
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.company-value-name {
+  font-weight: 600;
+  color: var(--text);
+  margin-right: 4px;
+}
+
+.company-value-desc { color: var(--text-2); }
 
 /* ── Activity log ── */
 .activity-log {
@@ -368,6 +468,15 @@ html, body {
   color: var(--text-2);
 }
 
+/* ── Responsive panel width ── */
+@media (min-width: 1400px) {
+  :root { --panel-w: 460px; }
+}
+
+@media (min-width: 1800px) {
+  :root { --panel-w: 560px; }
+}
+
 /* ── Sortable ghost ── */
 .sortable-ghost {
   opacity: 0.35;
@@ -379,4 +488,53 @@ html, body {
 .sortable-drag {
   box-shadow: var(--shadow-md);
   transform: rotate(1.5deg);
+}
+
+/* ── Artifact viewer ── */
+.artifact-list { display: flex; flex-direction: column; gap: 6px; }
+
+.artifact-item { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+
+.artifact-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  user-select: none;
+  background: var(--surface);
+  list-style: none;
+}
+
+.artifact-type {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.artifact-name { font-size: 12px; color: var(--text-2); flex: 1; }
+
+.artifact-stale {
+  font-size: 11px;
+  background: color-mix(in srgb, #f59e0b 15%, transparent);
+  color: #d97706;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.artifact-preview-wrap { padding: 12px; background: var(--bg); }
+
+.artifact-pre {
+  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text-1);
+  margin: 0;
 }

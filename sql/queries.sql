@@ -82,3 +82,6 @@ RETURNING *;
 -- name: MarkArtifactsStale :exec
 UPDATE artifacts SET stale = 1
 WHERE profile_hash != (SELECT profile_hash FROM user_profile WHERE id = 1);
+
+-- name: GetArtifact :one
+SELECT * FROM artifacts WHERE id = ? AND job_id = ?;

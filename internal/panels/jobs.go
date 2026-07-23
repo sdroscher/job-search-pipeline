@@ -2,6 +2,7 @@ package panels
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"log"
 	"net/http"
@@ -10,6 +11,28 @@ import (
 	"github.com/sdroscher/job-search-pipeline/internal/db"
 	"github.com/sdroscher/job-search-pipeline/internal/ui"
 )
+
+func parseStrings(s *string) []string {
+	if s == nil {
+		return nil
+	}
+
+	var out []string
+	_ = json.Unmarshal([]byte(*s), &out)
+
+	return out
+}
+
+func parseCompanyValues(s *string) []ui.CompanyValue {
+	if s == nil {
+		return nil
+	}
+
+	var out []ui.CompanyValue
+	_ = json.Unmarshal([]byte(*s), &out)
+
+	return out
+}
 
 // JobPanelHandler handles HTMX panel requests for individual jobs.
 type JobPanelHandler struct {
@@ -42,9 +65,24 @@ func (h *JobPanelHandler) HandleDetail(w http.ResponseWriter, r *http.Request) {
 		activity = []db.ActivityLog{}
 	}
 
+	artifacts, err := h.store.ListArtifacts(r.Context(), id)
+	if err != nil {
+		log.Printf("list artifacts failed: %v (id=%q)", err, id) //nolint:gosec
+		artifacts = []db.Artifact{}
+	}
+
+	data := ui.DetailData{
+		Job:           job,
+		Activity:      activity,
+		Positives:     parseStrings(job.Positives),
+		Concerns:      parseStrings(job.Concerns),
+		CompanyValues: parseCompanyValues(job.CompanyValues),
+		Artifacts:     artifacts,
+	}
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
-	err = ui.DetailPanel(job, activity).Render(r.Context(), w)
+	err = ui.DetailPanel(data).Render(r.Context(), w)
 	if err != nil {
 		log.Printf("render detail panel: %v", err)
 	}

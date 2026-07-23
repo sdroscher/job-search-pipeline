@@ -18,16 +18,18 @@ type Config struct {
 
 // Server holds dependencies for all HTTP handlers.
 type Server struct {
-	store    *db.Store
-	config   Config
-	jobPanel *panels.JobPanelHandler
+	store         *db.Store
+	config        Config
+	jobPanel      *panels.JobPanelHandler
+	artifactPanel *panels.ArtifactPanelHandler
 }
 
 func NewServer(store *db.Store, cfg Config) *Server {
 	return &Server{
-		store:    store,
-		config:   cfg,
-		jobPanel: panels.NewJobPanelHandler(store),
+		store:         store,
+		config:        cfg,
+		jobPanel:      panels.NewJobPanelHandler(store),
+		artifactPanel: panels.NewArtifactPanelHandler(store),
 	}
 }
 
@@ -56,6 +58,7 @@ func (s *Server) Router() http.Handler {
 		r.Get("/board", s.handleBoardPanel)
 		r.Get("/jobs/{id}", s.handleJobDetailPanel)
 		r.Post("/jobs/{id}/stage", s.handleUpdateStage)
+		r.Get("/jobs/{id}/artifacts/{artifactId}", s.handleArtifactPreview)
 	})
 
 	// UI — serves the board page
@@ -113,4 +116,8 @@ func (s *Server) handleJobDetailPanel(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleUpdateStage(w http.ResponseWriter, r *http.Request) {
 	s.jobPanel.HandleUpdateStage(w, r)
+}
+
+func (s *Server) handleArtifactPreview(w http.ResponseWriter, r *http.Request) {
+	s.artifactPanel.HandlePreview(w, r)
 }

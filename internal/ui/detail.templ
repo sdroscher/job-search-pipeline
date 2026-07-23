@@ -6,38 +6,138 @@ import (
 	"github.com/sdroscher/job-search-pipeline/internal/db"
 )
 
-templ DetailPanel(job db.Job, activity []db.ActivityLog) {
+// DetailData holds pre-parsed fields for the detail panel template.
+type DetailData struct {
+	Job           db.Job
+	Activity      []db.ActivityLog
+	Positives     []string
+	Concerns      []string
+	CompanyValues []CompanyValue
+	Artifacts     []db.Artifact
+}
+
+// CompanyValue is a named value extracted from a company's careers page.
+type CompanyValue struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+func fitScoreClass(score int) string {
+	switch {
+	case score >= 8:
+		return "detail-fit detail-fit-green"
+	case score >= 5:
+		return "detail-fit detail-fit-yellow"
+	default:
+		return "detail-fit detail-fit-red"
+	}
+}
+
+func artifactBasename(fpath string) string {
+	for i := len(fpath) - 1; i >= 0; i-- {
+		if fpath[i] == '/' || fpath[i] == '\\' {
+			return fpath[i+1:]
+		}
+	}
+
+	return fpath
+}
+
+templ DetailPanel(d DetailData) {
 	<div class="detail-panel-inner">
 		<div class="detail-header">
-			<div class="detail-company">{ job.Company }</div>
-			<div class="detail-role">{ job.Role }</div>
+			<div class="detail-company">{ d.Job.Company }</div>
+			<div class="detail-role">{ d.Job.Role }</div>
 			<div class="detail-meta">
-				@VerdictBadge(VerdictValue(job.Verdict))
-				if job.FitScore != nil {
-					<span>Fit: { fmt.Sprintf("%d/10", int(*job.FitScore)) }</span>
+				@VerdictBadge(VerdictValue(d.Job.Verdict))
+				if d.Job.FitScore != nil {
+					<span class={ fitScoreClass(int(*d.Job.FitScore)) }>{ fmt.Sprintf("%d/10", int(*d.Job.FitScore)) }</span>
 				}
-				if job.Salary != nil {
-					<span class="detail-salary">{ *job.Salary }</span>
+				if d.Job.Salary != nil {
+					<span class="detail-salary">{ *d.Job.Salary }</span>
+				}
+				if d.Job.Remote != nil {
+					<span class="detail-remote">{ *d.Job.Remote }</span>
 				}
 			</div>
+			if d.Job.SourceUrl != nil {
+				<a href={ templ.SafeURL(*d.Job.SourceUrl) } target="_blank" rel="noopener" class="detail-source-link">View posting ↗</a>
+			}
 		</div>
-		if job.Summary != nil {
-			<p class="detail-summary">{ *job.Summary }</p>
+		if d.Job.Summary != nil {
+			<p class="detail-summary">{ *d.Job.Summary }</p>
 		}
-		<div class="detail-tabs">
+		if len(d.Positives) > 0 {
 			<div class="detail-section">
-				<h3>Activity</h3>
-				<div class="activity-log">
-					for _, entry := range activity {
-						<div class="activity-entry">
-							<span class="activity-date">{ entry.Date.Format("2006-01-02") }</span>
-							<span class="activity-action">{ entry.Action }</span>
-							if entry.Notes != nil {
-								<span class="activity-notes">{ *entry.Notes }</span>
+				<h3>Positives</h3>
+				<ul class="eval-list eval-positives">
+					for _, p := range d.Positives {
+						<li>{ p }</li>
+					}
+				</ul>
+			</div>
+		}
+		if len(d.Concerns) > 0 {
+			<div class="detail-section">
+				<h3>Concerns</h3>
+				<ul class="eval-list eval-concerns">
+					for _, c := range d.Concerns {
+						<li>{ c }</li>
+					}
+				</ul>
+			</div>
+		}
+		if len(d.CompanyValues) > 0 {
+			<div class="detail-section">
+				<h3>Company Values</h3>
+				<div class="company-values">
+					for _, v := range d.CompanyValues {
+						<div class="company-value">
+							<span class="company-value-name">{ v.Name }</span>
+							if v.Description != "" {
+								<span class="company-value-desc">{ v.Description }</span>
 							}
 						</div>
 					}
 				</div>
+			</div>
+		}
+		if len(d.Artifacts) > 0 {
+			<div class="detail-section">
+				<h3>Artifacts</h3>
+				<div class="artifact-list">
+					for _, artifact := range d.Artifacts {
+						<details class="artifact-item">
+							<summary class="artifact-summary">
+								<span class="artifact-type">{ artifact.Type }</span>
+								<span class="artifact-name">{ artifactBasename(artifact.Filepath) }</span>
+								if artifact.Stale != 0 {
+									<span class="artifact-stale">stale</span>
+								}
+							</summary>
+							<div
+								hx-get={ fmt.Sprintf("/panels/jobs/%s/artifacts/%d", d.Job.ID, artifact.ID) }
+								hx-trigger="toggle from:closest details"
+								hx-swap="innerHTML"
+								class="artifact-preview-wrap"
+							></div>
+						</details>
+					}
+				</div>
+			</div>
+		}
+		<div class="detail-section">
+			<h3>Activity</h3>
+			<div class="activity-log">
+				for _, entry := range d.Activity {
+					<div class="activity-entry">
+						<span class="activity-date">{ entry.Date.Format("2006-01-02") }</span>
+						<span class="activity-action">{ entry.Action }</span>
+						if entry.Notes != nil {
+							<span class="activity-notes">{ *entry.Notes }</span>
+						}
+					</div>
+				}
 			</div>
 		</div>
 	</div>
