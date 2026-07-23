@@ -81,10 +81,41 @@ Parse a job posting, evaluate fit, add to board.
    - 3–5 concerns (specific, flag on-call, low salary, travel, non-Go stack, etc.)
    - one-paragraph summary (2–3 sentences, what's notable about this role for THIS user)
    - company_values: [{name, description}] from careers page
-5. Generate a slug ID: lowercase company + role keywords, hyphens, no spaces (e.g. `temporal-senior-swe-observability`)
-6. POST to `$BASE_URL/api/jobs` with all fields.
-7. POST to `$BASE_URL/api/jobs/<id>/activity`: `{"action": "Evaluated", "notes": "Added via /job-search add"}`
-8. Confirm: "Added **<Company>** — <Role> (fitScore: <N>/10 <emoji>)"
+5. **Before finalizing — gather missing info and context (one turn, ask everything at once):**
+   - **Missing info:** If salary or location is absent from the parsed data, flag it: "I couldn't find [salary / location] in the posting — do you have that? (Say 'skip' to continue without it.)" If they provide it, fold it into the evaluation before scoring.
+   - **Additional context:** "Any context I should know? e.g., recruiter reach-out, internal referral, found it yourself, heard from a friend — or skip." Store the answer in `my_notes`.
+   - **Networking:** "Do you have a contact at <Company>?" If yes, ask for their name and role, store in the `networking` field (e.g., `"Jane Doe – Senior Engineer"`), and add +0.5 to the raw fit score (cap at 10).
+   Ask all three in one message. Do not make the user wait through three separate turns.
+6. Generate a short, memorable slug ID: company name + the 2–3 most distinctive words from the role title, all lowercase, hyphen-separated, 3–5 words total. The user will type this ID in future commands, so make it easy to remember and short to type. Examples: `stripe-staff-swe`, `grafana-senior-backend`, `planhub-senior-php`, `temporal-swe-observability`. Do NOT append the full role title verbatim — distil it.
+7. POST to `$BASE_URL/api/jobs` with all fields.
+8. POST to `$BASE_URL/api/jobs/<id>/activity`: `{"action": "Evaluated", "notes": "Added via /job-search add"}`
+9. Confirm with the job ID clearly visible:
+   > Added **<Company>** — <Role> · ID: `<slug-id>` · fitScore: <N>/10 <emoji>
+   > Use `<slug-id>` in future commands, e.g. `/job-search resume <slug-id>`
+10. Offer follow-ups in one message:
+    - "Want a tailored resume or cover letter? Say so and I'll run the full command." If the user says yes, execute the `/job-search resume` or `/job-search cover-letter` steps from this file verbatim — including the pre-flight questions for cover letters. Never generate artifacts inline without following those steps.
+    - If a networking contact was recorded: "Want me to draft a reach-out to <contact name>? Run `/job-search reach-out <slug-id>` or say 'yes' now."
+
+---
+
+## /job-search reach-out <job-id>
+
+Draft a personalized reach-out message to a networking contact at the company.
+
+1. GET `$BASE_URL/api/jobs/<job-id>`. If `networking` is already populated, use that as the contact info.
+2. GET `$BASE_URL/api/profile`.
+3. Ask in one turn (anything not already known from the `networking` field):
+   - "Who are you reaching out to, and how do you know them? (e.g., ex-colleague, met at a conference, mutual connection, cold reach-out)"
+   - "What do you want from this? (e.g., intro call, referral for this specific role, just keeping the relationship warm)"
+   - "Email or LinkedIn message?"
+4. Draft the message:
+   - LinkedIn: under 150 words. Email: under 250.
+   - Open with the specific connection or shared context — not "I hope this finds you well."
+   - One sentence on what Simon is exploring and why this company interests him specifically (draw from `summary` and `company_values`). Do NOT say "I saw a job posting."
+   - Ask for exactly one low-friction thing: a 20-minute call, their honest read on the team, a referral if the relationship warrants it.
+   - Warm and direct. No corporate filler. No em-dashes. No AI-marker phrases.
+5. POST activity: `{"action": "Reach-out drafted", "notes": "<contact name> via <email|LinkedIn>"}`
+6. Show the draft and offer one round of revision.
 
 ---
 
@@ -150,14 +181,20 @@ Generate interview preparation notes.
 
 1. GET `$BASE_URL/api/jobs/<job-id>`
 2. GET `$BASE_URL/api/profile`
-3. Generate a prep document:
-   - **Likely behavioral questions** (5–7) with a suggested STAR story from the user's experience for each
+3. **Before generating — ask for context in one turn:**
+   - "Do you know who you'll be interviewing with? If so, share their names and roles."
+   - "Can you paste anything about them — a LinkedIn bio, a post or article they wrote, their GitHub? Even just their job title helps tailor the behavioral questions."
+   - "What do you know about the format? (e.g., number of rounds, 1:1 vs panel, technical screen, system design, take-home)"
+   Wait for the user to answer. If they say "skip" or have nothing, proceed with what you have from the job record.
+4. Generate a prep document, using any interviewer context to personalise:
+   - **Likely behavioral questions** (5–7) — if interviewers were named and context provided, tailor at least 2 questions to what you know about them (e.g., a question on their known technical focus area or a topic from a post they wrote)
+   - **Suggested STAR story** for each behavioral question, drawn from the user's profile and experience
    - **Likely technical questions** based on the role's stack and responsibilities (5–7)
    - **Research checklist**: company news, recent blog posts, specific team/product context
-   - **Questions to ask them** (5–7) — about team structure, on-call, tech debt, growth
-4. Write to `$OUTPUT_DIR/prep-<company>-<role>.md`
-5. POST activity: `{"action": "Interview prep generated"}`
-6. Confirm: "Prep notes written to <filepath>"
+   - **Questions to ask them** (5–7) — at least 2 must be grounded in the company's specific values or culture from the `company_values` field (not generic); the rest cover team structure, on-call, tech debt, growth trajectory
+5. Write to `$OUTPUT_DIR/prep-<company>-<role>.md`
+6. POST activity: `{"action": "Interview prep generated"}`
+7. Confirm: "Prep notes written to <filepath>"
 
 ---
 
@@ -174,3 +211,26 @@ Re-evaluate fit against the current profile. Use when: salary was revealed, prof
    ```
 5. POST activity: `{"action": "Re-evaluated", "notes": "fitScore <old> → <new>"}`
 6. Confirm: "Re-evaluated: fitScore now <N>/10 <emoji>"
+
+---
+
+## /job-search compare <id1> <id2>
+
+Side-by-side comparison of two jobs to help decide which to prioritize.
+
+1. GET `$BASE_URL/api/jobs/<id1>` and GET `$BASE_URL/api/jobs/<id2>` in parallel.
+2. GET `$BASE_URL/api/profile`.
+3. Build a side-by-side comparison table:
+
+   | Dimension | <Company A> | <Company B> |
+   |-----------|-------------|-------------|
+   | Role | | |
+   | Fit Score | | |
+   | Verdict | | |
+   | Salary | | |
+   | Remote | | |
+   | Stage | | |
+
+4. Highlight the key positives and concerns for each role (bullet list per job, 3 each max).
+5. Write a **Recommendation** paragraph (3–5 sentences) naming which role to prioritize next and why, based on fit score, salary alignment to profile target, remote match, and which is likely to move faster based on stage.
+6. Output everything as formatted markdown in the conversation — do not write to a file or call any API.
