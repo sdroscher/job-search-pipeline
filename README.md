@@ -22,6 +22,7 @@ The workflow is:
 - [templ](https://templ.guide) (`go install github.com/a-h/templ/cmd/templ@latest`)
 - [sqlc](https://sqlc.dev) (`go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest`)
 - [golangci-lint](https://golangci-lint.run) (`brew install golangci-lint`)
+- [air](https://github.com/air-verse/air) (`go install github.com/air-verse/air@latest`) — for live-reload in dev
 - [Claude Code](https://claude.ai/code)
 
 ### Setup
@@ -31,6 +32,8 @@ git clone https://github.com/you/job-search-pipeline
 cd job-search-pipeline
 task dev
 ```
+
+`task dev` uses [air](https://github.com/air-verse/air) for live-reload — the server restarts automatically when you change `.go`, `.templ`, or `.sql` files.
 
 Open `http://localhost:8080` — you'll see an empty board with seven stages: Evaluated → Applied → AI Assessment → Screening → Interviewing → Final Round → Offer.
 
@@ -56,13 +59,15 @@ First-time setup. Claude asks for your resume (paste or file path), salary range
 
 ### `/job-search add <url>`
 
-Paste a job URL from Greenhouse, Ashby, Lever, or any careers page. Claude:
-- Fetches and parses the job description (structured API where available, HTML scraper as fallback)
+Paste a job URL from Greenhouse, Ashby, Lever, BambooHR, SmartRecruiters, or any careers page. Claude:
+- Fetches and parses the job description (native API for Greenhouse/Ashby/Lever/SmartRecruiters, HTML scraper for BambooHR and generic pages)
 - Fetches the company's careers/about page to extract named values and mission
 - Scores fit 1–10 across salary alignment (25%), remote/location match (20%), tech stack (20%), green/red flags (20%), and role seniority (15%)
 - Sets verdict: green (8–10), yellow (5–7), red (1–4)
 - Writes 3–5 specific positives and 3–5 specific concerns
 - Generates a one-paragraph summary calibrated to your profile
+- Asks in one turn: any missing salary/location info, additional context (recruiter reach-out, referral, etc.), and whether you have a networking contact at the company
+- Assigns a short memorable slug ID (e.g. `stripe-staff-swe`) you can use in future commands
 - Adds the job to your board in the Evaluated stage
 - If the URL can't be parsed, prompts you to paste the JD directly
 
@@ -87,6 +92,28 @@ Generates an interview prep document with 5–7 behavioral questions (each with 
 ### `/job-search eval <job-id>`
 
 Re-runs the fit evaluation with the same scoring rubric as `add`. Use this when salary is disclosed, the role scope is clarified, or your profile has changed. Updates fit score, verdict, positives, and concerns in the DB and logs the change to the activity log (e.g. "fitScore 6 → 9").
+
+### `/job-search reach-out <job-id>`
+
+Drafts a personalized LinkedIn message or email to a networking contact at the company. Asks how you know them, what you want from the outreach, and which channel. Produces a concise draft (LinkedIn: under 150 words, email: under 250) grounded in your shared context — never "I saw a job posting."
+
+### `/job-search compare <job-id-1> <job-id-2>`
+
+Side-by-side comparison of two jobs to help decide which to prioritise next. Fetches both jobs and your profile, builds a comparison table (role, fit score, verdict, salary, remote, stage), highlights up to three key positives and concerns per role, and writes a 3–5 sentence recommendation naming which to pursue first and why.
+
+---
+
+## The detail panel
+
+Clicking any card on the board opens a detail panel on the right showing the full AI evaluation (fit score, verdict, positives, concerns), salary, remote status, company values, activity log, and any generated artifacts (resume, cover letter, prep doc). Artifacts are lazy-loaded on expand and rendered as formatted Markdown.
+
+The panel also shows the job's slug ID with a copy button — handy for pasting into commands.
+
+---
+
+## Profile
+
+`http://localhost:8080/profile` is a form where you can view and edit your profile directly in the browser. Changes mark all existing artifacts as stale (⚠) so you know which documents need regenerating.
 
 ---
 
@@ -117,6 +144,7 @@ The container mounts `./data` (SQLite) and `./output` (generated documents) as v
 ## Development
 
 ```bash
+task dev         # start server with air live-reload (restarts on .go/.templ/.sql changes)
 task generate    # regenerate sqlc queries and templ templates
 task test        # run all tests (unit + feature)
 task lint        # golangci-lint
@@ -125,3 +153,14 @@ task build       # compile to bin/job-search-pipeline
 ```
 
 Generated files (`internal/db/db.go`, `internal/db/models.go`, `internal/db/queries.sql.go`, `internal/ui/*_templ.go`) are excluded from git and regenerated on each build. Edit `sql/queries.sql` or `internal/ui/*.templ` and run `task generate` to update them.
+
+### Supported ATS platforms
+
+| Platform | Method |
+|---|---|
+| Greenhouse | JSON API |
+| Ashby | JSON API |
+| Lever | JSON API |
+| SmartRecruiters | JSON API |
+| BambooHR | HTML scraper |
+| Generic careers pages | HTML scraper |
