@@ -1,6 +1,6 @@
 services:
   app:
-    build: .
+    image: ghcr.io/sdroscher/job-search-pipeline:latest
     ports:
       - "${PORT:-8080}:8080"
     volumes:
@@ -11,3 +11,7 @@ services:
       OUTPUT_DIR: /output
       PORT: "8080"
     restart: unless-stopped
+
+# To build the image locally instead of pulling from GHCR:
+#   docker compose build && docker compose up
+# (requires Go 1.25+ toolchain in the builder stage)

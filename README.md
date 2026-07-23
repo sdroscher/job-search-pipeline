@@ -15,20 +15,54 @@ The workflow is:
 
 ## Quick start
 
-### Requirements
-
-- Go 1.25+
-- [Task](https://taskfile.dev) (`brew install go-task`)
-- [templ](https://templ.guide) (`go install github.com/a-h/templ/cmd/templ@latest`)
-- [sqlc](https://sqlc.dev) (`go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest`)
-- [golangci-lint](https://golangci-lint.run) (`brew install golangci-lint`)
-- [air](https://github.com/air-verse/air) (`go install github.com/air-verse/air@latest`) — for live-reload in dev
-- [Claude Code](https://claude.ai/code)
-
-### Setup
+### Option 1 — Docker (no Go required)
 
 ```bash
-git clone https://github.com/you/job-search-pipeline
+curl -O https://raw.githubusercontent.com/sdroscher/job-search-pipeline/main/docker-compose.yml
+docker compose up
+```
+
+The image is pulled from GHCR automatically. Data and generated files persist in `./data` and `./output`.
+
+### Option 2 — Pre-built binary (no Go required)
+
+Download the archive for your platform from the [latest release](https://github.com/sdroscher/job-search-pipeline/releases/latest), then:
+
+```bash
+tar -xzf job-search-pipeline_darwin_arm64.tar.gz   # adjust for your platform
+cd job-search-pipeline_darwin_arm64
+./job-search-pipeline
+```
+
+Keep `static/` in the same directory as the binary — it holds the CSS and JS the web UI needs.
+
+### Claude Code skill (both options)
+
+The archive and Docker setup both include `.claude/commands/job-search.md`. Copy it into your project (or `~/.claude/commands/`) so Claude Code picks up the `/job-search` commands:
+
+```bash
+mkdir -p ~/.claude/commands
+cp .claude/commands/job-search.md ~/.claude/commands/
+```
+
+Open Claude Code in the directory where your `data/` and `output/` folders live and run `/job-search init` to set up your profile.
+
+---
+
+### Build from source
+
+Requires Go 1.25+, Task, templ, sqlc, golangci-lint, air.
+
+| Tool | Install |
+|---|---|
+| [Task](https://taskfile.dev) | `brew install go-task` |
+| [templ](https://templ.guide) | `go install github.com/a-h/templ/cmd/templ@latest` |
+| [sqlc](https://sqlc.dev) | `go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest` |
+| [golangci-lint](https://golangci-lint.run) | `brew install golangci-lint` |
+| [air](https://github.com/air-verse/air) | `go install github.com/air-verse/air@latest` |
+
+```bash
+git clone https://github.com/sdroscher/job-search-pipeline
 cd job-search-pipeline
 task dev
 ```
@@ -137,16 +171,6 @@ The detail panel for any active job shows four **Close as…** buttons: Rejected
 ```bash
 ./bin/job-search-pipeline --help
 ```
-
----
-
-## Docker
-
-```bash
-docker compose up
-```
-
-The container mounts `./data` (SQLite) and `./output` (generated documents) as volumes, so data survives restarts.
 
 ---
 

@@ -1,0 +1,73 @@
+version: 2
+
+project_name: job-search-pipeline
+
+before:
+  hooks:
+    - go install github.com/a-h/templ/cmd/templ@latest
+    - go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+    - sqlc generate
+    - templ generate
+
+builds:
+  - id: linux
+    main: ./cmd/server
+    binary: job-search-pipeline
+    goos: [linux]
+    goarch: [amd64, arm64]
+    env:
+      - CGO_ENABLED=1
+      - >-
+        {{- if eq .Arch "arm64" -}}
+        CC=aarch64-linux-gnu-gcc
+        {{- else -}}
+        CC=gcc
+        {{- end -}}
+    ldflags:
+      - -s -w
+
+  - id: darwin
+    main: ./cmd/server
+    binary: job-search-pipeline
+    goos: [darwin]
+    goarch: [amd64, arm64]
+    env:
+      - CGO_ENABLED=1
+    ldflags:
+      - -s -w
+
+archives:
+  - formats: [tar.gz]
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - README.md
+      - LICENSE
+      - docker-compose.yml
+      - static/**
+      - .claude/commands/job-search.md
+
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
+
+changelog:
+  use: github
+  sort: asc
+  groups:
+    - title: Features
+      regexp: "^feat"
+      order: 0
+    - title: Bug Fixes
+      regexp: "^fix"
+      order: 1
+    - title: Other
+      order: 999
+  filters:
+    exclude:
+      - "^docs:"
+      - "^chore:"
+      - "^test:"
+
+release:
+  draft: false
+  prerelease: auto
