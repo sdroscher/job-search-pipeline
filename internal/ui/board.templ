@@ -91,6 +91,44 @@ templ JobCard(job db.Job, stale bool) {
 templ IndexPage(jobsByStage map[string][]db.Job, staleJobs map[string]bool) {
 	@Page("Board") {
 		@Board(jobsByStage, staleJobs)
+		<div id="panel-resize-handle" class="panel-resize-handle"></div>
 		<div id="detail-panel" class="detail-panel"></div>
+		<script>
+			(function() {
+				var handle = document.getElementById('panel-resize-handle');
+				var dragging = false;
+				var startX = 0;
+				var startW = 0;
+
+				function getPanelW() {
+					return parseInt(getComputedStyle(document.documentElement).getPropertyValue('--panel-w'), 10) || 360;
+				}
+
+				handle.addEventListener('mousedown', function(e) {
+					dragging = true;
+					startX = e.clientX;
+					startW = getPanelW();
+					document.body.style.userSelect = 'none';
+					document.body.style.cursor = 'col-resize';
+					e.preventDefault();
+				});
+
+				document.addEventListener('mousemove', function(e) {
+					if (!dragging) { return; }
+					var delta = startX - e.clientX;
+					var newW = Math.max(280, Math.min(900, startW + delta));
+					document.documentElement.style.setProperty('--panel-w', newW + 'px');
+				});
+
+				document.addEventListener('mouseup', function() {
+					if (!dragging) { return; }
+					dragging = false;
+					document.body.style.userSelect = '';
+					document.body.style.cursor = '';
+					var current = getComputedStyle(document.documentElement).getPropertyValue('--panel-w').trim();
+					localStorage.setItem('panel-w', current);
+				});
+			})();
+		</script>
 	}
 }

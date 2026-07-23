@@ -509,6 +509,22 @@ html, body {
   :root { --panel-w: 560px; }
 }
 
+/* ── Resize handle ── */
+.panel-resize-handle {
+  width: 6px;
+  flex-shrink: 0;
+  cursor: col-resize;
+  background: transparent;
+  transition: background 0.15s;
+  position: relative;
+  z-index: 1;
+}
+
+.panel-resize-handle:hover,
+.panel-resize-handle:active {
+  background: #3b82f6;
+}
+
 /* ── Sortable ghost ── */
 .sortable-ghost {
   opacity: 0.35;

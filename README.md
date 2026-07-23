@@ -47,6 +47,8 @@ Open Claude Code in this directory and run `/job-search init` to save your profi
 
 A ⚠ icon on a card means one or more generated documents (resume, cover letter) were created against an older version of your profile. Run `/job-search resume <id>` or `/job-search cover-letter <id>` to regenerate.
 
+The detail panel is resizable — drag the left edge (the thin vertical gutter between the board and panel) to adjust its width. The width persists across page reloads.
+
 ---
 
 ## Claude Code skill

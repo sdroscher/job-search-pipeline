@@ -10,6 +10,9 @@ templ Page(title string) {
 			<script>
 				(function(){var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);})();
 			</script>
+			<script>
+				(function(){var w=localStorage.getItem('panel-w');if(w)document.documentElement.style.setProperty('--panel-w',w);})();
+			</script>
 			<link rel="stylesheet" href="/static/app.css"/>
 			<script src="/static/htmx.min.js"></script>
 			<script src="/static/sortable.min.js"></script>
