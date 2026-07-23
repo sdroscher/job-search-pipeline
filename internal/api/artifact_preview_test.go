@@ -42,5 +42,5 @@ func TestArtifactPreview(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, w.Code)
 	require.Contains(t, w.Body.String(), "Test Resume")
-	require.Contains(t, w.Body.String(), "<pre")
+	require.Contains(t, w.Body.String(), "markdown-body")
 }

@@ -61,8 +61,10 @@ func (s *Server) Router() http.Handler {
 		r.Get("/jobs/{id}/artifacts/{artifactId}", s.handleArtifactPreview)
 	})
 
-	// UI — serves the board page
+	// UI pages
 	r.Get("/", s.handleIndex)
+	r.Get("/profile", s.handleProfilePage)
+	r.Post("/profile", s.handleProfileFormPost)
 
 	return r
 }

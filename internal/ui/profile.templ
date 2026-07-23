@@ -1,0 +1,107 @@
+package ui
+
+import (
+	"fmt"
+
+	"github.com/sdroscher/job-search-pipeline/internal/db"
+)
+
+func derefStr(s *string) string {
+	if s == nil {
+		return ""
+	}
+
+	return *s
+}
+
+func derefInt(n *int64) string {
+	if n == nil {
+		return ""
+	}
+
+	return fmt.Sprintf("%d", *n)
+}
+
+templ ProfilePage(p db.UserProfile, saved bool) {
+	@Page("Profile") {
+		<div class="profile-page">
+			if saved {
+				<div class="profile-saved">Profile saved.</div>
+			}
+			<form method="POST" action="/profile" class="profile-form">
+				<section class="profile-section">
+					<h2 class="profile-section-title">Resume</h2>
+					<div class="form-group">
+						<label class="form-label" for="resume_md">Resume (Markdown) *</label>
+						<textarea id="resume_md" name="resume_md" class="form-textarea form-textarea-lg" rows="20" required>{ p.ResumeMd }</textarea>
+					</div>
+					<div class="form-group">
+						<label class="form-label" for="cover_letter_sample">Cover Letter Sample (optional)</label>
+						<textarea id="cover_letter_sample" name="cover_letter_sample" class="form-textarea" rows="10">{ derefStr(p.CoverLetterSample) }</textarea>
+					</div>
+					<div class="form-group">
+						<label class="form-label" for="writing_voice_md">Writing Voice Notes (optional)</label>
+						<textarea id="writing_voice_md" name="writing_voice_md" class="form-textarea" rows="4">{ derefStr(p.WritingVoiceMd) }</textarea>
+					</div>
+				</section>
+				<section class="profile-section">
+					<h2 class="profile-section-title">Compensation</h2>
+					<div class="form-row">
+						<div class="form-group">
+							<label class="form-label" for="salary_min">Minimum ($)</label>
+							<input id="salary_min" name="salary_min" type="number" class="form-input" value={ derefInt(p.SalaryMin) }/>
+						</div>
+						<div class="form-group">
+							<label class="form-label" for="salary_max">Maximum ($)</label>
+							<input id="salary_max" name="salary_max" type="number" class="form-input" value={ derefInt(p.SalaryMax) }/>
+						</div>
+						<div class="form-group">
+							<label class="form-label" for="salary_target">Target ($)</label>
+							<input id="salary_target" name="salary_target" type="number" class="form-input" value={ derefInt(p.SalaryTarget) }/>
+						</div>
+					</div>
+				</section>
+				<section class="profile-section">
+					<h2 class="profile-section-title">Preferences</h2>
+					<div class="form-row">
+						<div class="form-group">
+							<label class="form-label" for="remote_pref">Remote Preference</label>
+							<select id="remote_pref" name="remote_pref" class="form-select">
+								<option value="">— select —</option>
+								<option value="remote-only" selected?={ derefStr(p.RemotePref) == "remote-only" }>Remote Only</option>
+								<option value="hybrid-ok" selected?={ derefStr(p.RemotePref) == "hybrid-ok" }>Hybrid OK</option>
+								<option value="open" selected?={ derefStr(p.RemotePref) == "open" }>Open</option>
+							</select>
+						</div>
+						<div class="form-group">
+							<label class="form-label" for="location">Location</label>
+							<input id="location" name="location" type="text" class="form-input" value={ derefStr(p.Location) } placeholder="City, Country"/>
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="form-label" for="industries">Industries / Company Types</label>
+						<textarea id="industries" name="industries" class="form-textarea" rows="3">{ derefStr(p.Industries) }</textarea>
+					</div>
+					<div class="form-group">
+						<label class="form-label" for="tech_prefs">Preferred Tech Stack</label>
+						<textarea id="tech_prefs" name="tech_prefs" class="form-textarea" rows="3">{ derefStr(p.TechPrefs) }</textarea>
+					</div>
+				</section>
+				<section class="profile-section">
+					<h2 class="profile-section-title">Job Criteria</h2>
+					<div class="form-group">
+						<label class="form-label" for="green_flags">Green Flags (what excites you)</label>
+						<textarea id="green_flags" name="green_flags" class="form-textarea" rows="4">{ derefStr(p.GreenFlags) }</textarea>
+					</div>
+					<div class="form-group">
+						<label class="form-label" for="red_flags">Red Flags (deal-breakers)</label>
+						<textarea id="red_flags" name="red_flags" class="form-textarea" rows="4">{ derefStr(p.RedFlags) }</textarea>
+					</div>
+				</section>
+				<div class="profile-actions">
+					<button type="submit" class="btn-primary">Save Profile</button>
+				</div>
+			</form>
+		</div>
+	}
+}
