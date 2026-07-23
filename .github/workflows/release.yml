@@ -15,11 +15,11 @@ jobs:
   goreleaser-linux:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: true
@@ -27,79 +27,44 @@ jobs:
       - name: Install arm64 cross-compiler
         run: sudo apt-get install -y gcc-aarch64-linux-gnu
 
-      - uses: goreleaser/goreleaser-action@v6
+      - uses: goreleaser/goreleaser-action@v7
         with:
           version: latest
-          args: release --split --clean
+          args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GORELEASER_CURRENT_TAG: ${{ github.ref_name }}
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: dist-linux
-          path: dist/
 
   # Build macOS binaries on an Apple Silicon runner.
   # Both arm64 (native) and amd64 (SDK cross-compile) are built here.
+  # Runs after linux so it can append artifacts to the existing release.
   goreleaser-darwin:
+    needs: [goreleaser-linux]
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: true
 
-      - uses: goreleaser/goreleaser-action@v6
+      - uses: goreleaser/goreleaser-action@v7
         with:
           version: latest
-          args: release --split --clean
+          args: release --clean --config .goreleaser-darwin.yaml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GORELEASER_CURRENT_TAG: ${{ github.ref_name }}
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: dist-darwin
-          path: dist/
-
-  # Merge platform-specific dist dirs and publish the GitHub Release.
-  release:
-    needs: [goreleaser-linux, goreleaser-darwin]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-          cache: true
-
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: dist-*
-          path: dist/
-          merge-multiple: true
-
-      - uses: goreleaser/goreleaser-action@v6
-        with:
-          version: latest
-          args: continue --merge
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   # Build and push a multi-arch Docker image to GHCR.
   docker:
-    needs: release
+    needs: [goreleaser-linux]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: docker/setup-buildx-action@v3
 

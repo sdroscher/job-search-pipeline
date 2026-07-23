@@ -10,19 +10,13 @@ before:
     - templ generate
 
 builds:
-  - id: linux
+  - id: darwin
     main: ./cmd/server
     binary: job-search-pipeline
-    goos: [linux]
+    goos: [darwin]
     goarch: [amd64, arm64]
     env:
       - CGO_ENABLED=1
-      - >-
-        {{- if eq .Arch "arm64" -}}
-        CC=aarch64-linux-gnu-gcc
-        {{- else -}}
-        CC=gcc
-        {{- end -}}
     ldflags:
       - -s -w
 
@@ -37,27 +31,9 @@ archives:
       - .claude/commands/job-search.md
 
 checksum:
-  name_template: checksums.txt
-  algorithm: sha256
-
-changelog:
-  use: github
-  sort: asc
-  groups:
-    - title: Features
-      regexp: "^feat"
-      order: 0
-    - title: Bug Fixes
-      regexp: "^fix"
-      order: 1
-    - title: Other
-      order: 999
-  filters:
-    exclude:
-      - "^docs:"
-      - "^chore:"
-      - "^test:"
+  disable: true
 
 release:
+  replace_existing_artifacts: true
   draft: false
   prerelease: auto
