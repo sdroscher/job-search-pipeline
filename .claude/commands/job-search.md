@@ -81,6 +81,15 @@ Parse a job posting, evaluate fit, add to board.
    - 3–5 concerns (specific, flag on-call, low salary, travel, non-Go stack, etc.)
    - one-paragraph summary (2–3 sentences, what's notable about this role for THIS user)
    - company_values: [{name, description}] from careers page
+4.5. **Agency detection — find the real listing:**
+   - Check `result.source` from the parse response. Known agency/aggregator values: `"Jobgether"`, `"Jobright"`, `"LinkedIn"`, `"Indeed"`, `"Glassdoor"`.
+   - If `result.source` is one of these:
+     a. Note the company name (`result.company`) and role (`result.title`) from the parsed data.
+     b. Use WebSearch to find the company's direct job listing: search for `"{company}" "{role}" careers apply site:greenhouse.io OR site:ashbyhq.com OR site:lever.co OR site:bamboohr.com OR site:smartrecruiters.com` (or search directly on the company's careers site if known).
+     c. If a direct ATS link is found, tell the user: "**This listing is from {source} (an aggregator).** I found what looks like the direct posting at `{url}` — want me to use that instead? (Say 'yes', 'no', or paste a different URL.)"
+     d. If the user says yes: re-run the parse with the direct URL (POST `$BASE_URL/api/parse` with the new URL) and continue from step 2 with the new result.
+     e. If the user says no or no direct link is found: continue with the aggregator's data. Add a note to `my_notes`: "Source: {source} aggregator — direct listing not confirmed."
+   - If `result.source` is NOT an agency value, skip this step entirely.
 5. **Before finalizing — gather missing info and context (one turn, ask everything at once):**
    - **Missing info:** If salary or location is absent from the parsed data, flag it: "I couldn't find [salary / location] in the posting — do you have that? (Say 'skip' to continue without it.)" If they provide it, fold it into the evaluation before scoring.
    - **Additional context:** "Any context I should know? e.g., recruiter reach-out, internal referral, found it yourself, heard from a friend — or skip." Store the answer in `my_notes`.

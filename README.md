@@ -63,6 +63,7 @@ First-time setup. Claude asks for your resume (paste or file path), salary range
 
 Paste a job URL from Greenhouse, Ashby, Lever, BambooHR, SmartRecruiters, or any careers page. Claude:
 - Fetches and parses the job description (native API for Greenhouse/Ashby/Lever/SmartRecruiters, HTML scraper for BambooHR and generic pages)
+- Detects if the URL is from a job aggregator (LinkedIn, Indeed, Glassdoor, Jobgether, Jobright) and automatically searches for the company's direct ATS posting — offering to use that instead if found
 - Fetches the company's careers/about page to extract named values and mission
 - Scores fit 1–10 across salary alignment (25%), remote/location match (20%), tech stack (20%), green/red flags (20%), and role seniority (15%)
 - Sets verdict: green (8–10), yellow (5–7), red (1–4)
@@ -165,4 +166,9 @@ Generated files (`internal/db/db.go`, `internal/db/models.go`, `internal/db/quer
 | Lever | JSON API |
 | SmartRecruiters | JSON API |
 | BambooHR | HTML scraper |
+| Jobgether | HTML scraper |
+| Jobright | HTML scraper |
+| LinkedIn | HTML scraper (detects aggregator, prompts for direct link) |
+| Indeed | HTML scraper (detects aggregator, prompts for direct link) |
+| Glassdoor | HTML scraper (detects aggregator, prompts for direct link) |
 | Generic careers pages | HTML scraper |
