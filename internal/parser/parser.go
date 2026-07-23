@@ -27,27 +27,43 @@ const (
 	ATSLever           ATSType = "Lever"
 	ATSBambooHR        ATSType = "BambooHR"
 	ATSSmartRecruiters ATSType = "SmartRecruiters"
+	ATSJobgether       ATSType = "Jobgether"
+	ATSJobright        ATSType = "Jobright"
+	ATSLinkedIn        ATSType = "LinkedIn"
+	ATSIndeed          ATSType = "Indeed"
+	ATSGlassdoor       ATSType = "Glassdoor"
 	ATSHTML            ATSType = "HTML"
 )
 
 // DetectATS returns the ATS type for a given URL.
 func DetectATS(rawURL string) ATSType {
-	lowerURL := strings.ToLower(rawURL)
+	lower := strings.ToLower(rawURL)
 
-	switch {
-	case strings.Contains(lowerURL, "boards.greenhouse.io"):
-		return ATSGreenhouse
-	case strings.Contains(lowerURL, "jobs.ashbyhq.com") || strings.Contains(lowerURL, "ashbyhq.com"):
-		return ATSAshby
-	case strings.Contains(lowerURL, "jobs.lever.co"):
-		return ATSLever
-	case strings.Contains(lowerURL, "bamboohr.com"):
-		return ATSBambooHR
-	case strings.Contains(lowerURL, "jobs.smartrecruiters.com"):
-		return ATSSmartRecruiters
-	default:
-		return ATSHTML
+	// Order matters: more specific substrings must appear before their prefixes.
+	patterns := []struct {
+		substr string
+		ats    ATSType
+	}{
+		{"boards.greenhouse.io", ATSGreenhouse},
+		{"jobs.ashbyhq.com", ATSAshby},
+		{"ashbyhq.com", ATSAshby},
+		{"jobs.lever.co", ATSLever},
+		{"bamboohr.com", ATSBambooHR},
+		{"jobs.smartrecruiters.com", ATSSmartRecruiters},
+		{"jobgether.com", ATSJobgether},
+		{"jobright.ai", ATSJobright},
+		{"linkedin.com/jobs", ATSLinkedIn},
+		{"indeed.com", ATSIndeed},
+		{"glassdoor.com", ATSGlassdoor},
 	}
+
+	for _, entry := range patterns {
+		if strings.Contains(lower, entry.substr) {
+			return entry.ats
+		}
+	}
+
+	return ATSHTML
 }
 
 // Parse fetches and parses a job posting URL, delegating to the appropriate ATS parser.
@@ -63,9 +79,23 @@ func Parse(ctx context.Context, rawURL string) (*ParsedJob, error) {
 		return FetchBambooHR(ctx, rawURL)
 	case ATSSmartRecruiters:
 		return FetchSmartRecruiters(ctx, rawURL)
+	case ATSJobgether:
+		return FetchJobgether(ctx, rawURL)
+	case ATSJobright:
+		return FetchJobright(ctx, rawURL)
+	case ATSLinkedIn, ATSIndeed, ATSGlassdoor:
+		// These require login or are JS-heavy; fall back to HTML scrape but preserve source name
+		job, err := ScrapeHTML(ctx, rawURL)
+		if err != nil {
+			return nil, err
+		}
+
+		job.Source = string(DetectATS(rawURL))
+
+		return job, nil
 	case ATSHTML:
 		return ScrapeHTML(ctx, rawURL)
+	default:
+		return ScrapeHTML(ctx, rawURL)
 	}
-
-	return ScrapeHTML(ctx, rawURL)
 }
