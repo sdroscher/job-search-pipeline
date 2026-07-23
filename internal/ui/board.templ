@@ -71,6 +71,10 @@ templ JobCard(job db.Job, stale bool) {
 	>
 		<div class="job-card-company">{ job.Company }</div>
 		<div class="job-card-role">{ job.Role }</div>
+		<div class="job-card-id">{ job.ID }</div>
+		if job.Salary != nil {
+			<div class="job-card-salary">{ *job.Salary }</div>
+		}
 		<div class="job-card-meta">
 			@VerdictBadge(VerdictValue(job.Verdict))
 			if job.FitScore != nil {
@@ -79,6 +83,7 @@ templ JobCard(job db.Job, stale bool) {
 			if stale {
 				@StaleWarning()
 			}
+			<span class="job-card-date">{ job.LastActivity.Format("Jan 2") }</span>
 		</div>
 	</div>
 }

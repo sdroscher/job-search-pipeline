@@ -1,10 +1,9 @@
 package panels
 
 import (
+	"bytes"
 	"database/sql"
 	"errors"
-	"fmt"
-	"html"
 	"log"
 	"net/http"
 	"os"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/sdroscher/job-search-pipeline/internal/db"
+	"github.com/yuin/goldmark"
 )
 
 // ArtifactPanelHandler handles HTMX panel requests for artifact preview.
@@ -24,7 +24,7 @@ func NewArtifactPanelHandler(store *db.Store) *ArtifactPanelHandler {
 	return &ArtifactPanelHandler{store: store}
 }
 
-// HandlePreview reads the artifact file from disk and returns a <pre> HTML fragment.
+// HandlePreview reads the artifact file from disk and returns a rendered markdown HTML fragment.
 func (h *ArtifactPanelHandler) HandlePreview(w http.ResponseWriter, r *http.Request) {
 	jobID := chi.URLParam(r, "id")
 	rawArtifactID := chi.URLParam(r, "artifactId")
@@ -58,9 +58,19 @@ func (h *ArtifactPanelHandler) HandlePreview(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	var buf bytes.Buffer
+
+	convertErr := goldmark.New().Convert(content, &buf)
+	if convertErr != nil {
+		log.Printf("artifact markdown render: %v", convertErr)
+		http.Error(w, "render failed", http.StatusInternalServerError)
+
+		return
+	}
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
-	_, writeErr := fmt.Fprintf(w, `<pre class="artifact-pre">%s</pre>`, html.EscapeString(string(content)))
+	_, writeErr := w.Write([]byte(`<div class="markdown-body">` + buf.String() + `</div>`))
 	if writeErr != nil {
 		log.Printf("artifact preview write: %v", writeErr)
 	}
