@@ -85,6 +85,26 @@ The detail panel is resizable — drag the left edge (the thin vertical gutter b
 
 ---
 
+## The detail panel
+
+Clicking any card on the board opens a detail panel on the right showing the full AI evaluation (fit score, verdict, positives, concerns), salary, remote status, company values, activity log, and any generated artifacts (resume, cover letter, prep doc). Artifacts are lazy-loaded on expand and rendered as formatted Markdown.
+
+The panel displays the job's slug ID below the posting link, with a copy-to-clipboard button for quick reference in commands.
+
+---
+
+## Closing jobs
+
+The detail panel for any active job shows four **Close as…** buttons: Rejected, Listing Withdrawn, Declined, and Won't Apply. Clicking one moves the job off the active board immediately. A collapsible **Closed** section below the kanban columns holds all closed jobs — click any closed card to reopen the detail panel, where a **Re-open → Evaluated** button returns the job to the active board.
+
+---
+
+## Profile
+
+`http://localhost:8080/profile` is a form where you can view and edit your profile directly in the browser. Changes mark all existing artifacts as stale (⚠) so you know which documents need regenerating.
+
+---
+
 ## Claude Code skill
 
 Run these commands from any Claude Code session open in this directory. The skill reads `$JOB_PIPELINE_URL` (default `http://localhost:8080`) so the server must be running.
@@ -137,26 +157,6 @@ Drafts a personalized LinkedIn message or email to a networking contact at the c
 ### `/job-search compare <job-id-1> <job-id-2>`
 
 Side-by-side comparison of two jobs to help decide which to prioritise next. Fetches both jobs and your profile, builds a comparison table (role, fit score, verdict, salary, remote, stage), highlights up to three key positives and concerns per role, and writes a 3–5 sentence recommendation naming which to pursue first and why.
-
----
-
-## The detail panel
-
-Clicking any card on the board opens a detail panel on the right showing the full AI evaluation (fit score, verdict, positives, concerns), salary, remote status, company values, activity log, and any generated artifacts (resume, cover letter, prep doc). Artifacts are lazy-loaded on expand and rendered as formatted Markdown.
-
-The panel displays the job's slug ID below the posting link, with a copy-to-clipboard button for quick reference in commands.
-
----
-
-## Closing jobs
-
-The detail panel for any active job shows four **Close as…** buttons: Rejected, Listing Withdrawn, Declined, and Won't Apply. Clicking one moves the job off the active board immediately. A collapsible **Closed** section below the kanban columns holds all closed jobs — click any closed card to reopen the detail panel, where a **Re-open → Evaluated** button returns the job to the active board.
-
----
-
-## Profile
-
-`http://localhost:8080/profile` is a form where you can view and edit your profile directly in the browser. Changes mark all existing artifacts as stale (⚠) so you know which documents need regenerating.
 
 ---
 
