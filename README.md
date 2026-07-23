@@ -114,6 +114,12 @@ The panel displays the job's slug ID below the posting link, with a copy-to-clip
 
 ---
 
+## Closing jobs
+
+The detail panel for any active job shows four **Close as…** buttons: Rejected, Listing Withdrawn, Declined, and Won't Apply. Clicking one moves the job off the active board immediately. A collapsible **Closed** section below the kanban columns holds all closed jobs — click any closed card to reopen the detail panel, where a **Re-open → Evaluated** button returns the job to the active board.
+
+---
+
 ## Profile
 
 `http://localhost:8080/profile` is a form where you can view and edit your profile directly in the browser. Changes mark all existing artifacts as stale (⚠) so you know which documents need regenerating.

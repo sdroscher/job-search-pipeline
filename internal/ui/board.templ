@@ -171,7 +171,7 @@ func closedStageBadgeClass(stage string) string {
 // CloseJobResponse is an HTMX OOB response for close and re-open actions.
 // It always clears the detail panel and updates whichever column/section changed.
 templ CloseJobResponse(fromStage string, fromJobs []db.Job, toStage string, toJobs []db.Job, closedJobs []db.Job, staleJobs map[string]bool) {
-	<div id="detail-panel" hx-swap-oob="true"></div>
+	<div id="detail-panel" hx-swap-oob="innerHTML"></div>
 	if !isClosedStage(fromStage) {
 		<div id={ stageSlug(fromStage) } class={ "column", stageColors[fromStage] } hx-swap-oob="outerHTML">
 			@ColumnInner(fromStage, fromJobs, staleJobs)
