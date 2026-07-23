@@ -101,7 +101,7 @@ The detail panel for any active job shows four **Close as…** buttons: Rejected
 
 ## Profile
 
-`http://localhost:8080/profile` is a form where you can view and edit your profile directly in the browser. Changes mark all existing artifacts as stale (⚠) so you know which documents need regenerating.
+`http://localhost:8080/profile` is a form where you can view and edit your profile directly in the browser — resume, salary range, location, flags, writing voice, career stories, and achievement bank. Changes mark all existing artifacts as stale (⚠) so you know which documents need regenerating.
 
 ---
 
@@ -111,7 +111,15 @@ Run these commands from any Claude Code session open in this directory. The skil
 
 ### `/job-search init`
 
-First-time setup. Claude asks for your resume (paste or file path), salary range, remote preference, location, preferred industries, tech stack, green flags, red flags, and writing voice notes. Saves everything to `/api/profile`.
+First-time setup — run once, shapes every resume and cover letter generated after. Claude walks you through:
+
+1. **Resume** — paste or provide a file path.
+2. **Career context** — Claude reads your resume, picks 2–3 of your most substantial projects, and interviews you about each one: situation, key decision, outcome, numbers. It synthesises each into a structured story block and confirms it with you. This is what the cover-letter command draws on for the narrative paragraph (P2) and what lets the resume command pick the right *angle* on each bullet rather than just keyword-matching.
+3. **Cover letter sample** — optional, used to calibrate tone and sentence rhythm.
+4. **Profile questions** — salary range, remote preference, location, industries, tech stack, green flags, red flags, writing voice notes.
+5. **Achievement bank** — Claude walks through five categories (scale, architecture, quality/team, org-level, earlier career) one at a time, asks you to describe what you did, follows up for any missing numbers, drafts a tight quantified bullet, and confirms it with you. The final bank is used by the cover-letter command to select the most JD-relevant bullets for P3.
+
+All steps except the resume are skippable. You can re-run `init` at any time to update your profile.
 
 ### `/job-search add <url>`
 
@@ -130,17 +138,17 @@ Paste a job URL from Greenhouse, Ashby, Lever, BambooHR, SmartRecruiters, or any
 
 ### `/job-search resume <job-id>`
 
-Generates a tailored resume in Markdown. Claude reorders your experience bullets so the most JD-relevant ones lead in each role, adjusts your summary to mirror the JD's language, and surfaces the specific technologies the role calls for — without inventing experience. Saves to `$OUTPUT_DIR/resume-<company>-<role>.md` and registers the document as an artifact (so the board can track freshness).
+Generates a tailored resume in Markdown. Claude reorders your experience bullets so the most JD-relevant ones lead in each role, adjusts your summary to mirror the JD's language, and surfaces the specific technologies the role calls for — without inventing experience. If you built career context during `init`, Claude uses it to understand which *aspect* of each bullet best matches the JD before reordering — not just whether the bullet matches on keywords. Saves to `$OUTPUT_DIR/resume-<company>-<role>.md` and registers the document as an artifact (so the board can track freshness).
 
 ### `/job-search cover-letter <job-id>`
 
 Generates a four-paragraph cover letter in your voice:
-- **P1:** What drew you to this company specifically — named values, specific product, remote-first culture, etc.
-- **P2:** One achievement story that connects your background to the team's actual work.
-- **P3:** Three numbered achievements most relevant to the JD, specific and measurable where possible.
-- **P4:** Availability and closing invitation.
+- **P1 (Hook):** Claude asks what drew you to this role or company, then writes the opening from your answer — personal and specific, not a restatement of the job description.
+- **P2 (Connection):** One achievement story connecting your background to the team's work. If you built career context during `init`, Claude uses the matching story block directly — full situation, the decision you made, the outcome — rather than guessing from a resume bullet what the story was.
+- **P3 (Evidence):** Two or three accomplishments most relevant to the JD, selected from your achievement bank if you built one during `init`, otherwise drawn from the resume with added context.
+- **P4 (Close):** Direct, warm, no boilerplate.
 
-Uses your `writing_voice_md` guide and `cover_letter_sample` if you provided them during init. Saves to `$OUTPUT_DIR/cover-letter-<company>-<role>.md`.
+Uses your `writing_voice_md` guide and `cover_letter_sample` to match your tone. Saves to `$OUTPUT_DIR/cover-letter-<company>-<role>.md`.
 
 ### `/job-search prep <job-id>`
 
