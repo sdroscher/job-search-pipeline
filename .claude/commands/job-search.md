@@ -44,17 +44,39 @@ Set up your profile. Run this once.
    - Green flags — what excites you in a role?
    - Red flags — deal-breakers?
    - Writing voice notes — anything specific about your cover letter style? (optional)
-4. Ask about achievements for cover letters. Say:
+4. Build the achievement bank conversationally. Say:
 
-   > "Last one: do you have a bank of pre-written achievement bullets for cover letters?
-   > These are the specific, quantified accomplishments you'd pull from for Para 2/3 —
-   > e.g. 'Architected a Notifications platform delivering 1,700+ notifications/sec to 90M+ users.'
-   > Organising them by theme (Scale, Architecture, Team, etc.) helps the cover-letter command
-   > pick the most JD-relevant ones.
-   >
-   > You can paste them now (markdown is fine), provide a file path, or say 'skip'."
+   > "Last thing: let's build a bank of achievement bullets the cover-letter command can pull from.
+   > I'll ask about a few areas of your work — just describe what you did in rough terms and I'll
+   > help shape each one into a tight, specific bullet. Say 'skip' to skip a category, or 'done'
+   > at any point if you've covered enough."
 
-   If they provide a path, read it with the Read tool. If they skip, set `achievements_md` to null.
+   Then go through each category below **one at a time**, waiting for a response before moving to
+   the next. Do not list all categories upfront.
+
+   **Categories to cover (in order):**
+   a. **Scale & reliability** — "Tell me about something you built or ran at significant scale —
+      high traffic, large user base, complex data volume. What was it, and what were the numbers?"
+   b. **Architecture or technical design** — "Was there a system you designed or meaningfully
+      redesigned? What was the problem, what did you build, and what changed?"
+   c. **Code quality or team uplift** — "Did you improve test coverage, coding standards, processes,
+      or the way your team works? What was the before and after?"
+   d. **Cross-team or org-level impact** — "Any work that shaped things beyond your immediate team —
+      an engineering-wide standard, an initiative you drove, influence on a product direction?"
+   e. **Earlier career (optional)** — "Anything from earlier roles worth including for senior roles
+      that aren't covered above? Say 'skip' if not."
+
+   **For each response that isn't 'skip':**
+   - If numbers or scope are vague, ask one follow-up: "Can you put a number on that? (users
+     affected, % improvement, team size, time saved, throughput, etc.)"
+   - Once you have enough detail, draft a tight 1–2 sentence bullet in this form:
+     action verb + what you built/did + quantified result or impact.
+   - Show it and ask: "How does this read? Any changes?" Apply any edits before moving on.
+
+   After all categories, compile the approved bullets into a markdown achievement bank organised
+   by category heading. Set this as `achievements_md`.
+
+   If the user says 'skip' to all categories or 'skip' at the start, set `achievements_md` to null.
 
 5. PUT to `$BASE_URL/api/profile` with `Content-Type: application/json`:
    ```json
