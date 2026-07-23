@@ -387,6 +387,38 @@ html, body {
 
 .detail-source-link:hover { text-decoration: underline; }
 
+/* Job ID row */
+.detail-id-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.detail-job-id {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-2);
+  background: var(--column-bg);
+  padding: 2px 7px;
+  border-radius: 4px;
+  letter-spacing: 0.02em;
+  user-select: all;
+}
+
+.copy-id-btn {
+  font-size: 11px;
+  color: var(--text-2);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 8px;
+  cursor: pointer;
+  transition: color 0.1s, border-color 0.1s;
+}
+
+.copy-id-btn:hover { color: var(--text); border-color: var(--text-2); }
+
 /* ── Eval lists (positives / concerns) ── */
 .eval-list {
   list-style: none;
@@ -633,9 +665,7 @@ html, body {
 .profile-page {
   flex: 1;
   overflow-y: auto;
-  max-width: 780px;
-  margin: 0 auto;
-  padding: 24px 16px 64px;
+  padding: 24px max(40px, 5%) 64px;
 }
 
 .profile-saved {

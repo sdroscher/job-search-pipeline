@@ -63,6 +63,13 @@ templ DetailPanel(d DetailData) {
 			if d.Job.SourceUrl != nil {
 				<a href={ templ.SafeURL(*d.Job.SourceUrl) } target="_blank" rel="noopener" class="detail-source-link">View posting ↗</a>
 			}
+			<div class="detail-id-row">
+				<span class="detail-job-id">{ d.Job.ID }</span>
+				<button
+					class="copy-id-btn"
+					data-id={ d.Job.ID }
+					onclick="var b=this;navigator.clipboard.writeText(b.dataset.id).then(function(){b.textContent='Copied!';setTimeout(function(){b.textContent='Copy ID'},1500)})">Copy ID</button>
+			</div>
 		</div>
 		if d.Job.Summary != nil {
 			<p class="detail-summary">{ *d.Job.Summary }</p>

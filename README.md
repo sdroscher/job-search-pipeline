@@ -107,7 +107,7 @@ Side-by-side comparison of two jobs to help decide which to prioritise next. Fet
 
 Clicking any card on the board opens a detail panel on the right showing the full AI evaluation (fit score, verdict, positives, concerns), salary, remote status, company values, activity log, and any generated artifacts (resume, cover letter, prep doc). Artifacts are lazy-loaded on expand and rendered as formatted Markdown.
 
-The panel also shows the job's slug ID with a copy button — handy for pasting into commands.
+The panel displays the job's slug ID below the posting link, with a copy-to-clipboard button for quick reference in commands.
 
 ---
 
