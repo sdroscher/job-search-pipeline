@@ -21,20 +21,20 @@ tasks:
 
   test:
     deps: [generate]
-    cmd: go test ./... -count=1 -race
+    cmd: gotestsum -- ./... -count=1 -race
 
   test:unit:
     deps: [generate]
-    cmd: go test ./internal/... -count=1 -race
+    cmd: gotestsum -- ./internal/... -count=1 -race
 
   test:feature:
     deps: [generate]
-    cmd: go test ./tests/... -count=1 -race
+    cmd: gotestsum -- ./tests/... -count=1 -race
 
   coverage:
     deps: [generate]
     cmds:
-      - go test ./... -count=1 -coverprofile=coverage.out -coverpkg=./internal/...
+      - gotestsum -- ./... -count=1 -coverprofile=coverage.out -coverpkg=./internal/...
       - grep -v "_templ\.go\|internal/db/db\.go\|internal/db/models\.go\|internal/db/queries\.sql\.go" coverage.out > coverage.filtered.out
       - go tool cover -func=coverage.filtered.out | tail -1
 
