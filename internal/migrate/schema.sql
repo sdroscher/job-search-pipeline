@@ -1,7 +1,8 @@
 -- Authoritative schema source. Embedded via //go:embed in internal/migrate/migrate.go
--- and re-executed on every startup. All statements are CREATE TABLE IF NOT EXISTS,
--- making this idempotent and append-only safe. To add new schema, append here only —
--- do not use a separate migrations/ directory.
+-- and re-executed on every startup. All CREATE TABLE statements use IF NOT EXISTS.
+-- To add a new table: append here.
+-- To add a new column to an existing table: add it here AND add a call to
+-- addColumnIfMissing in migrate.go so existing databases are upgraded.
 
 CREATE TABLE IF NOT EXISTS user_profile (
   id                    INTEGER PRIMARY KEY DEFAULT 1,
@@ -17,6 +18,7 @@ CREATE TABLE IF NOT EXISTS user_profile (
   red_flags             TEXT,
   tech_prefs            TEXT,
   writing_voice_md      TEXT,
+  achievements_md       TEXT,
   profile_hash          TEXT NOT NULL DEFAULT '',
   updated_at            DATETIME DEFAULT CURRENT_TIMESTAMP
 );

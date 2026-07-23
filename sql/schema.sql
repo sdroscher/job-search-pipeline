@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS user_profile (
   red_flags             TEXT,
   tech_prefs            TEXT,
   writing_voice_md      TEXT,
+  achievements_md       TEXT,
   profile_hash          TEXT NOT NULL DEFAULT '',
   updated_at            DATETIME DEFAULT CURRENT_TIMESTAMP
 );

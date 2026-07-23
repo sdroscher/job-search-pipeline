@@ -44,7 +44,19 @@ Set up your profile. Run this once.
    - Green flags — what excites you in a role?
    - Red flags — deal-breakers?
    - Writing voice notes — anything specific about your cover letter style? (optional)
-4. PUT to `$BASE_URL/api/profile` with `Content-Type: application/json`:
+4. Ask about achievements for cover letters. Say:
+
+   > "Last one: do you have a bank of pre-written achievement bullets for cover letters?
+   > These are the specific, quantified accomplishments you'd pull from for Para 2/3 —
+   > e.g. 'Architected a Notifications platform delivering 1,700+ notifications/sec to 90M+ users.'
+   > Organising them by theme (Scale, Architecture, Team, etc.) helps the cover-letter command
+   > pick the most JD-relevant ones.
+   >
+   > You can paste them now (markdown is fine), provide a file path, or say 'skip'."
+
+   If they provide a path, read it with the Read tool. If they skip, set `achievements_md` to null.
+
+5. PUT to `$BASE_URL/api/profile` with `Content-Type: application/json`:
    ```json
    {
      "resume_md": "<resume text>",
@@ -58,11 +70,12 @@ Set up your profile. Run this once.
      "tech_prefs": "<comma-separated or freeform>",
      "green_flags": "<freeform>",
      "red_flags": "<freeform>",
-     "writing_voice_md": "<notes or null>"
+     "writing_voice_md": "<notes or null>",
+     "achievements_md": "<achievement bank markdown or null>"
    }
    ```
    All fields except `resume_md` are optional (omit or null if not provided).
-5. Confirm: "Profile saved. Open http://localhost:8080 to see your board."
+6. Confirm: "Profile saved. Open http://localhost:8080 to see your board."
 
 ---
 
@@ -166,7 +179,7 @@ Generate a cover letter in the user's voice. Write to filesystem.
 3. Generate a 4-paragraph cover letter using the user's answer to ground P1:
    - **P1 (Hook):** Open with what the user told you drew them to this role. Make it feel personal and specific — not "I was excited to see this posting." Write from their perspective, in their voice. 2–3 sentences.
    - **P2 (Connection):** One concrete achievement story that connects their background to the team's actual work. This should not duplicate a bullet point from the resume — go deeper, give context, explain the impact in a sentence the resume doesn't have room for.
-   - **P3 (Evidence):** Two or three specific accomplishments most relevant to the JD. These can reference the same work as the resume but must add something — quantify further, name the decision made, describe the outcome beyond what fits in a bullet.
+   - **P3 (Evidence):** Two or three specific accomplishments most relevant to the JD. **If `profile.achievements_md` is populated, select bullets from it** — pick the 2–3 that best match what the JD is asking for (tech stack, scale, leadership, etc.). Adapt lightly for sentence flow but do not change the facts or invent new details. If `achievements_md` is empty, fall back to the resume, but find accomplishments that go beyond what the resume bullet says — quantify further, name the decision, describe the outcome.
    - **P4 (Close):** Availability and a direct, warm invitation to talk. One or two sentences. No "I look forward to hearing from you at your earliest convenience."
 4. Style rules — enforce these without exception:
    - No em-dashes (`—`). Use a comma, period, or rewrite the sentence.
