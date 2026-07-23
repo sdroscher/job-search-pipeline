@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/sdroscher/job-search-pipeline/internal/db"
 )
@@ -9,6 +10,24 @@ import (
 var activeStages = []string{
 	"Evaluated", "Applied", "AI Assessment", "Screening",
 	"Interviewing", "Final Round", "Offer",
+}
+
+var closedStages = []string{"Rejected", "Listing Withdrawn", "Declined", "Won't Apply"}
+
+func isClosedStage(stage string) bool {
+	for _, closedStage := range closedStages {
+		if stage == closedStage {
+			return true
+		}
+	}
+
+	return false
+}
+
+func stageSlug(stage string) string {
+	rep := strings.NewReplacer(" ", "-", "'", "")
+
+	return "column-" + rep.Replace(strings.ToLower(stage))
 }
 
 var stageColors = map[string]string{
@@ -45,19 +64,24 @@ templ Board(jobsByStage map[string][]db.Job, staleJobs map[string]bool) {
 	</script>
 }
 
+// ColumnInner renders the header and cards inside a column div (reused by CloseJobResponse OOB).
+templ ColumnInner(stage string, jobs []db.Job, staleJobs map[string]bool) {
+	<div class="column-header">
+		<span class="column-title">{ stage }</span>
+		if len(jobs) > 0 {
+			<span class="column-count">{ fmt.Sprintf("%d", len(jobs)) }</span>
+		}
+	</div>
+	<div class="column-cards" data-stage={ stage }>
+		for _, job := range jobs {
+			@JobCard(job, staleJobs[job.ID])
+		}
+	</div>
+}
+
 templ Column(stage string, jobs []db.Job, staleJobs map[string]bool) {
-	<div class={ "column", stageColors[stage] }>
-		<div class="column-header">
-			<span class="column-title">{ stage }</span>
-			if len(jobs) > 0 {
-				<span class="column-count">{ fmt.Sprintf("%d", len(jobs)) }</span>
-			}
-		</div>
-		<div class="column-cards" data-stage={ stage }>
-			for _, job := range jobs {
-				@JobCard(job, staleJobs[job.ID])
-			}
-		</div>
+	<div id={ stageSlug(stage) } class={ "column", stageColors[stage] }>
+		@ColumnInner(stage, jobs, staleJobs)
 	</div>
 }
 
@@ -88,9 +112,85 @@ templ JobCard(job db.Job, stale bool) {
 	</div>
 }
 
-templ IndexPage(jobsByStage map[string][]db.Job, staleJobs map[string]bool) {
+// ClosedSection renders the collapsible closed-jobs drawer.
+// Pass oob=true when rendering as an HTMX out-of-band swap.
+templ ClosedSection(jobs []db.Job, oob bool) {
+	if oob {
+		<div id="closed-section" class="closed-section" hx-swap-oob="outerHTML">
+			@closedSectionContent(jobs)
+		</div>
+	} else {
+		<div id="closed-section" class="closed-section">
+			@closedSectionContent(jobs)
+		</div>
+	}
+}
+
+templ closedSectionContent(jobs []db.Job) {
+	if len(jobs) > 0 {
+		<details class="closed-details">
+			<summary class="closed-summary">
+				<span>Closed</span>
+				<span class="closed-count">{ fmt.Sprintf("%d", len(jobs)) }</span>
+			</summary>
+			<div class="closed-grid">
+				for _, job := range jobs {
+					@ClosedJobCard(job)
+				}
+			</div>
+		</details>
+	}
+}
+
+templ ClosedJobCard(job db.Job) {
+	<div
+		class="closed-job-card"
+		hx-get={ "/panels/jobs/" + job.ID }
+		hx-target="#detail-panel"
+		hx-swap="innerHTML"
+	>
+		<span class="closed-job-company">{ job.Company }</span>
+		<span class="closed-job-role">{ job.Role }</span>
+		<span class={ "closed-stage-badge", closedStageBadgeClass(job.Stage) }>{ job.Stage }</span>
+	</div>
+}
+
+func closedStageBadgeClass(stage string) string {
+	switch stage {
+	case "Rejected":
+		return "badge-rejected"
+	case "Listing Withdrawn":
+		return "badge-withdrawn"
+	case "Declined":
+		return "badge-declined"
+	default:
+		return "badge-wont-apply"
+	}
+}
+
+// CloseJobResponse is an HTMX OOB response for close and re-open actions.
+// It always clears the detail panel and updates whichever column/section changed.
+templ CloseJobResponse(fromStage string, fromJobs []db.Job, toStage string, toJobs []db.Job, closedJobs []db.Job, staleJobs map[string]bool) {
+	<div id="detail-panel" hx-swap-oob="true"></div>
+	if !isClosedStage(fromStage) {
+		<div id={ stageSlug(fromStage) } class={ "column", stageColors[fromStage] } hx-swap-oob="outerHTML">
+			@ColumnInner(fromStage, fromJobs, staleJobs)
+		</div>
+	}
+	if !isClosedStage(toStage) {
+		<div id={ stageSlug(toStage) } class={ "column", stageColors[toStage] } hx-swap-oob="outerHTML">
+			@ColumnInner(toStage, toJobs, staleJobs)
+		</div>
+	}
+	@ClosedSection(closedJobs, true)
+}
+
+templ IndexPage(jobsByStage map[string][]db.Job, closedJobs []db.Job, staleJobs map[string]bool) {
 	@Page("Board") {
-		@Board(jobsByStage, staleJobs)
+		<div class="board-and-closed">
+			@Board(jobsByStage, staleJobs)
+			@ClosedSection(closedJobs, false)
+		</div>
 		<div id="panel-resize-handle" class="panel-resize-handle"></div>
 		<div id="detail-panel" class="detail-panel"></div>
 		<script>

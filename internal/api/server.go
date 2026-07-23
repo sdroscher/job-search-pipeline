@@ -58,6 +58,7 @@ func (s *Server) Router() http.Handler {
 		r.Get("/board", s.handleBoardPanel)
 		r.Get("/jobs/{id}", s.handleJobDetailPanel)
 		r.Post("/jobs/{id}/stage", s.handleUpdateStage)
+		r.Post("/jobs/{id}/close", s.handleCloseJob)
 		r.Get("/jobs/{id}/artifacts/{artifactId}", s.handleArtifactPreview)
 	})
 
@@ -118,6 +119,10 @@ func (s *Server) handleJobDetailPanel(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleUpdateStage(w http.ResponseWriter, r *http.Request) {
 	s.jobPanel.HandleUpdateStage(w, r)
+}
+
+func (s *Server) handleCloseJob(w http.ResponseWriter, r *http.Request) {
+	s.jobPanel.HandleCloseJob(w, r)
 }
 
 func (s *Server) handleArtifactPreview(w http.ResponseWriter, r *http.Request) {

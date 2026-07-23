@@ -757,3 +757,135 @@ html, body {
 }
 
 .btn-primary:hover { opacity: 0.88; }
+
+/* ── Board + closed wrapper ── */
+.board-and-closed {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* Make .board fill available height inside the column wrapper */
+.board-and-closed > .board { flex: 1; min-height: 0; }
+
+/* ── Closed section ── */
+.closed-section {
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.closed-details { padding: 0; }
+
+.closed-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.closed-summary::-webkit-details-marker { display: none; }
+
+.closed-count {
+  background: var(--border);
+  color: var(--text-2);
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+
+.closed-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 14px 10px;
+}
+
+.closed-job-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: border-color 0.15s;
+}
+
+.closed-job-card:hover { border-color: var(--text-2); }
+
+.closed-job-company { font-weight: 600; color: var(--text); }
+.closed-job-role { color: var(--text-2); }
+
+.closed-stage-badge {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+.badge-rejected    { background: rgba(222,53,11,.12); color: #de350b; }
+.badge-withdrawn   { background: rgba(94,108,132,.12); color: #5e6c84; }
+.badge-declined    { background: rgba(245,158,11,.12); color: #d97706; }
+.badge-wont-apply  { background: rgba(94,108,132,.12); color: #5e6c84; }
+
+/* ── Close action buttons in detail panel ── */
+.detail-close-section {
+  border-top: 1px solid var(--border);
+  padding: 14px 16px;
+  margin-top: 8px;
+}
+
+.detail-close-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-2);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.detail-close-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.close-btn {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 12px;
+  border-radius: 5px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.close-btn:hover { opacity: 0.8; }
+
+.close-btn-rejected   { background: rgba(222,53,11,.10); color: #de350b; border-color: rgba(222,53,11,.25); }
+.close-btn-withdrawn  { background: rgba(94,108,132,.10); color: #5e6c84; border-color: var(--border); }
+.close-btn-declined   { background: rgba(245,158,11,.10); color: #d97706; border-color: rgba(245,158,11,.25); }
+.close-btn-wont-apply { background: rgba(94,108,132,.10); color: #5e6c84; border-color: var(--border); }
+
+.detail-reopen-btn {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 12px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: var(--column-bg);
+  color: var(--text);
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.detail-reopen-btn:hover { opacity: 0.8; }

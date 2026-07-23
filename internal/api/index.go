@@ -18,6 +18,12 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	closedJobs, closedErr := s.store.ListClosedJobs(ctx)
+	if closedErr != nil {
+		log.Printf("list closed jobs: %v", closedErr)
+		closedJobs = []db.Job{}
+	}
+
 	staleJobs := s.store.StaleJobSet(ctx, jobs)
 
 	byStage := make(map[string][]db.Job)
@@ -27,7 +33,7 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
-	renderErr := ui.IndexPage(byStage, staleJobs).Render(ctx, w)
+	renderErr := ui.IndexPage(byStage, closedJobs, staleJobs).Render(ctx, w)
 	if renderErr != nil {
 		log.Printf("render: %v", renderErr)
 	}

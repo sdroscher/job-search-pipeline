@@ -1,6 +1,7 @@
 package panels
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -142,4 +143,92 @@ func (h *JobPanelHandler) HandleUpdateStage(w http.ResponseWriter, r *http.Reque
 	if err != nil {
 		log.Printf("render column: %v", err)
 	}
+}
+
+// HandleCloseJob transitions a job to/from a closed stage and returns HTMX OOB swaps.
+func (h *JobPanelHandler) HandleCloseJob(w http.ResponseWriter, r *http.Request) {
+	jobID := chi.URLParam(r, "id")
+
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+
+	parseErr := r.ParseForm()
+	if parseErr != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+
+		return
+	}
+
+	newStage := r.FormValue("stage")
+	fromStage := r.FormValue("from_stage")
+
+	if newStage == "" || fromStage == "" {
+		http.Error(w, "stage and from_stage required", http.StatusBadRequest)
+
+		return
+	}
+
+	ctx := r.Context()
+
+	_, err := h.store.UpdateJob(ctx, db.UpdateJobParams{ID: jobID, Stage: &newStage})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "not found", http.StatusNotFound)
+		} else {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+
+		return
+	}
+
+	colData, err := h.buildCloseJobData(ctx)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+
+		return
+	}
+
+	fromJobs := jobsForStage(colData.active, fromStage)
+	toJobs := jobsForStage(colData.active, newStage)
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	renderErr := ui.CloseJobResponse(fromStage, fromJobs, newStage, toJobs, colData.closed, colData.stale).Render(ctx, w)
+	if renderErr != nil {
+		log.Printf("render close job OOB: %v", renderErr)
+	}
+}
+
+type closeJobData struct {
+	active []db.Job
+	closed []db.Job
+	stale  map[string]bool
+}
+
+func (h *JobPanelHandler) buildCloseJobData(ctx context.Context) (*closeJobData, error) {
+	activeJobs, err := h.store.ListJobs(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	closedJobs, err := h.store.ListClosedJobs(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &closeJobData{
+		active: activeJobs,
+		closed: closedJobs,
+		stale:  h.store.StaleJobSet(ctx, activeJobs),
+	}, nil
+}
+
+func jobsForStage(jobs []db.Job, stage string) []db.Job {
+	result := make([]db.Job, 0)
+	for _, job := range jobs {
+		if job.Stage == stage {
+			result = append(result, job)
+		}
+	}
+
+	return result
 }

@@ -147,5 +147,44 @@ templ DetailPanel(d DetailData) {
 				}
 			</div>
 		</div>
+		<div class="detail-close-section">
+			if isClosedStage(d.Job.Stage) {
+				<div class="detail-close-label">Status: { d.Job.Stage }</div>
+				<button
+					class="detail-reopen-btn"
+					hx-post={ fmt.Sprintf("/panels/jobs/%s/close", d.Job.ID) }
+					hx-vals={ fmt.Sprintf(`{"stage":"Evaluated","from_stage":"%s"}`, d.Job.Stage) }
+					hx-swap="none"
+				>Re-open → Evaluated</button>
+			} else {
+				<div class="detail-close-label">Close as:</div>
+				<div class="detail-close-buttons">
+					<button
+						class="close-btn close-btn-rejected"
+						hx-post={ fmt.Sprintf("/panels/jobs/%s/close", d.Job.ID) }
+						hx-vals={ fmt.Sprintf(`{"stage":"Rejected","from_stage":"%s"}`, d.Job.Stage) }
+						hx-swap="none"
+					>Rejected</button>
+					<button
+						class="close-btn close-btn-withdrawn"
+						hx-post={ fmt.Sprintf("/panels/jobs/%s/close", d.Job.ID) }
+						hx-vals={ fmt.Sprintf(`{"stage":"Listing Withdrawn","from_stage":"%s"}`, d.Job.Stage) }
+						hx-swap="none"
+					>Listing Withdrawn</button>
+					<button
+						class="close-btn close-btn-declined"
+						hx-post={ fmt.Sprintf("/panels/jobs/%s/close", d.Job.ID) }
+						hx-vals={ fmt.Sprintf(`{"stage":"Declined","from_stage":"%s"}`, d.Job.Stage) }
+						hx-swap="none"
+					>Declined</button>
+					<button
+						class="close-btn close-btn-wont-apply"
+						hx-post={ fmt.Sprintf("/panels/jobs/%s/close", d.Job.ID) }
+						hx-vals={ fmt.Sprintf(`{"stage":"Won't Apply","from_stage":"%s"}`, d.Job.Stage) }
+						hx-swap="none"
+					>Won't Apply</button>
+				</div>
+			}
+		</div>
 	</div>
 }

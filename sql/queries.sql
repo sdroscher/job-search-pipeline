@@ -25,10 +25,17 @@ ON CONFLICT(id) DO UPDATE SET
 RETURNING *;
 
 -- name: ListJobs :many
-SELECT * FROM jobs ORDER BY
+SELECT * FROM jobs
+WHERE stage NOT IN ('Rejected', 'Listing Withdrawn', 'Declined', 'Won''t Apply')
+ORDER BY
   CASE verdict WHEN 'green' THEN 0 WHEN 'yellow' THEN 1 ELSE 2 END,
   fit_score DESC,
   salary_min DESC;
+
+-- name: ListClosedJobs :many
+SELECT * FROM jobs
+WHERE stage IN ('Rejected', 'Listing Withdrawn', 'Declined', 'Won''t Apply')
+ORDER BY updated_at DESC;
 
 -- name: GetJob :one
 SELECT * FROM jobs WHERE id = ?;
