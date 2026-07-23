@@ -35,6 +35,17 @@ func parseCompanyValues(s *string) []ui.CompanyValue {
 	return out
 }
 
+// isValidCloseStage checks if a stage is a valid close target.
+// Valid close stages are terminal states or the reopen target.
+func isValidCloseStage(stage string) bool {
+	switch stage {
+	case "Rejected", "Listing Withdrawn", "Declined", "Won't Apply", "Evaluated":
+		return true
+	}
+
+	return false
+}
+
 // JobPanelHandler handles HTMX panel requests for individual jobs.
 type JobPanelHandler struct {
 	store *db.Store
@@ -163,6 +174,12 @@ func (h *JobPanelHandler) HandleCloseJob(w http.ResponseWriter, r *http.Request)
 
 	if newStage == "" || fromStage == "" {
 		http.Error(w, "stage and from_stage required", http.StatusBadRequest)
+
+		return
+	}
+
+	if !isValidCloseStage(newStage) {
+		http.Error(w, "invalid stage", http.StatusBadRequest)
 
 		return
 	}
