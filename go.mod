@@ -1,6 +1,6 @@
 module github.com/sdroscher/job-search-pipeline
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/PuerkitoBio/goquery v1.12.0
