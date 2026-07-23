@@ -22,10 +22,12 @@ type ParsedJob struct {
 type ATSType string
 
 const (
-	ATSGreenhouse ATSType = "Greenhouse"
-	ATSAshby      ATSType = "Ashby"
-	ATSLever      ATSType = "Lever"
-	ATSHTML       ATSType = "HTML"
+	ATSGreenhouse      ATSType = "Greenhouse"
+	ATSAshby           ATSType = "Ashby"
+	ATSLever           ATSType = "Lever"
+	ATSBambooHR        ATSType = "BambooHR"
+	ATSSmartRecruiters ATSType = "SmartRecruiters"
+	ATSHTML            ATSType = "HTML"
 )
 
 // DetectATS returns the ATS type for a given URL.
@@ -39,6 +41,10 @@ func DetectATS(rawURL string) ATSType {
 		return ATSAshby
 	case strings.Contains(lowerURL, "jobs.lever.co"):
 		return ATSLever
+	case strings.Contains(lowerURL, "bamboohr.com"):
+		return ATSBambooHR
+	case strings.Contains(lowerURL, "jobs.smartrecruiters.com"):
+		return ATSSmartRecruiters
 	default:
 		return ATSHTML
 	}
@@ -53,6 +59,10 @@ func Parse(ctx context.Context, rawURL string) (*ParsedJob, error) {
 		return FetchAshby(ctx, rawURL)
 	case ATSLever:
 		return FetchLever(ctx, rawURL)
+	case ATSBambooHR:
+		return FetchBambooHR(ctx, rawURL)
+	case ATSSmartRecruiters:
+		return FetchSmartRecruiters(ctx, rawURL)
 	case ATSHTML:
 		return ScrapeHTML(ctx, rawURL)
 	}
