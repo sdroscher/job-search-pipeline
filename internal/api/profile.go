@@ -1,7 +1,7 @@
 package api
 
 import (
-	"crypto/md5" //nolint:gosec // MD5 used for fingerprinting, not security
+	"crypto/sha256"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -53,7 +53,7 @@ func (s *Server) handlePutProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hash := fmt.Sprintf("%x", md5.Sum([]byte(req.ResumeMd))) //nolint:gosec // MD5 for fingerprinting only
+	hash := fmt.Sprintf("%x", sha256.Sum256([]byte(req.ResumeMd)))
 
 	profile, err := s.store.UpsertProfile(r.Context(), db.UpsertProfileParams{
 		ResumeMd:          req.ResumeMd,

@@ -24,30 +24,36 @@ type srCompensation struct {
 	Currency string  `json:"currency"`
 }
 
+type srLocation struct {
+	City    string `json:"city"`
+	Country string `json:"country"`
+	Remote  bool   `json:"remote"`
+}
+
+type srEmploymentType struct {
+	Label string `json:"label"`
+}
+
+type srJobSection struct {
+	Text string `json:"text"`
+}
+
+type srJobSections struct {
+	JobDescription        srJobSection `json:"jobDescription"` //nolint:tagliatelle
+	Qualifications        srJobSection `json:"qualifications"`
+	AdditionalInformation srJobSection `json:"additionalInformation"` //nolint:tagliatelle
+}
+
+type srJobAd struct {
+	Sections srJobSections `json:"sections"`
+}
+
 type srResponse struct {
-	Name     string `json:"name"`
-	Location struct {
-		City    string `json:"city"`
-		Country string `json:"country"`
-		Remote  bool   `json:"remote"`
-	} `json:"location"`
-	TypeOfEmployment struct {
-		Label string `json:"label"`
-	} `json:"typeOfEmployment"` //nolint:tagliatelle
-	Compensation *srCompensation `json:"compensation"`
-	JobAd        struct {
-		Sections struct {
-			JobDescription struct {
-				Text string `json:"text"`
-			} `json:"jobDescription"` //nolint:tagliatelle
-			Qualifications struct {
-				Text string `json:"text"`
-			} `json:"qualifications"`
-			AdditionalInformation struct {
-				Text string `json:"text"`
-			} `json:"additionalInformation"` //nolint:tagliatelle
-		} `json:"sections"`
-	} `json:"jobAd"` //nolint:tagliatelle
+	Name             string           `json:"name"`
+	Location         srLocation       `json:"location"`
+	TypeOfEmployment srEmploymentType `json:"typeOfEmployment"` //nolint:tagliatelle
+	Compensation     *srCompensation  `json:"compensation"`
+	JobAd            srJobAd          `json:"jobAd"` //nolint:tagliatelle
 }
 
 // FetchSmartRecruiters parses a SmartRecruiters job URL using the public postings API.

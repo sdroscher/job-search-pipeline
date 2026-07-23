@@ -54,7 +54,8 @@ func TestArtifacts(t *testing.T) {
 		createJob(t, ts, "art-list-job", "ListCo", "SWE", "Evaluated")
 
 		profile := putProfile(t, ts, "# My Resume")
-		hash, _ := profile["profile_hash"].(string)
+		hash, ok := profile["profile_hash"].(string)
+		require.True(t, ok, "profile_hash must be a string")
 
 		createArtifact(t, ts, "art-list-job", "resume", "resume-list.md", hash)
 

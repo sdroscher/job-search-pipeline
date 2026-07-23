@@ -7,33 +7,35 @@ import (
 	"golang.org/x/net/html"
 )
 
+const lineBreak = "\n"
+
 var htmlTagRe = regexp.MustCompile(`<[^>]+>`)
 
 // htmlToMD converts HTML to a best-effort Markdown representation.
 // Shared by all ATS parsers that process HTML content.
 func htmlToMD(raw string) string {
 	replacers := []struct{ from, to string }{
-		{"<p>", "\n"},
-		{"</p>", "\n"},
-		{"<br>", "\n"},
-		{"<br/>", "\n"},
-		{"<br />", "\n"},
-		{"<li>", "\n- "},
+		{"<p>", lineBreak},
+		{"</p>", lineBreak},
+		{"<br>", lineBreak},
+		{"<br/>", lineBreak},
+		{"<br />", lineBreak},
+		{"<li>", lineBreak + "- "},
 		{"</li>", ""},
 		{"<ul>", ""},
-		{"</ul>", "\n"},
+		{"</ul>", lineBreak},
 		{"<ol>", ""},
-		{"</ol>", "\n"},
+		{"</ol>", lineBreak},
 		{"<strong>", "**"},
 		{"</strong>", "**"},
 		{"<em>", "_"},
 		{"</em>", "_"},
 		{"<h1>", "# "},
-		{"</h1>", "\n"},
+		{"</h1>", lineBreak},
 		{"<h2>", "## "},
-		{"</h2>", "\n"},
+		{"</h2>", lineBreak},
 		{"<h3>", "### "},
-		{"</h3>", "\n"},
+		{"</h3>", lineBreak},
 	}
 
 	out := raw

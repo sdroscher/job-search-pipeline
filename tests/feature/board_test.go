@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestBoard(t *testing.T) {
@@ -33,7 +34,8 @@ func TestBoard(t *testing.T) {
 		createJob(t, ts, "stale-board-job", "Acme", "SWE", "Evaluated")
 
 		profile := putProfile(t, ts, "# Resume v1")
-		hash, _ := profile["profile_hash"].(string)
+		hash, ok := profile["profile_hash"].(string)
+		require.True(t, ok, "profile_hash must be a string")
 
 		createArtifact(t, ts, "stale-board-job", "resume", "resume-acme-swe.md", hash)
 

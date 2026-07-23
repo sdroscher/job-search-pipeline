@@ -70,20 +70,22 @@ func FetchJobgetherFromURL(ctx context.Context, fetchURL, sourceURL string) (*Pa
 	}, nil
 }
 
-// jobgetherTitleCompany extracts title from <h1> and company from og:title ("Role at Company").
-// Falls back to og:title for title and .company-name selector for company when needed.
-func jobgetherTitleCompany(doc *goquery.Document) (string, string) {
-	var title, company string
-
-	ogTitle, _ := doc.Find(`meta[property="og:title"]`).Attr("content")
-	ogTitle = strings.TrimSpace(ogTitle)
-
-	// Strip " | Jobgether" suffix
-	for _, suffix := range []string{" | Jobgether", " - Jobgether"} {
-		if idx := strings.LastIndex(ogTitle, suffix); idx > 0 {
-			ogTitle = ogTitle[:idx]
+// stripSuffix removes each suffix from s when found at a non-zero position.
+func stripSuffix(s string, suffixes []string) string {
+	for _, suffix := range suffixes {
+		if idx := strings.LastIndex(s, suffix); idx > 0 {
+			s = s[:idx]
 		}
 	}
+
+	return s
+}
+
+// jobgetherTitleCompany extracts title from <h1> and company from og:title ("Role at Company").
+// Falls back to og:title for title and .company-name selector for company when needed.
+func jobgetherTitleCompany(doc *goquery.Document) (title, company string) {
+	ogTitle, _ := doc.Find(`meta[property="og:title"]`).Attr("content")
+	ogTitle = strings.TrimSpace(stripSuffix(ogTitle, []string{" | Jobgether", " - Jobgether"}))
 
 	// Extract company from "Role at Company" pattern in og:title
 	if idx := strings.LastIndex(ogTitle, " at "); idx > 0 {

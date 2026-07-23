@@ -14,6 +14,11 @@ import (
 	"github.com/yuin/goldmark"
 )
 
+const (
+	intBase   = 10
+	int64Bits = 64
+)
+
 // ArtifactPanelHandler handles HTMX panel requests for artifact preview.
 type ArtifactPanelHandler struct {
 	store *db.Store
@@ -29,7 +34,7 @@ func (h *ArtifactPanelHandler) HandlePreview(w http.ResponseWriter, r *http.Requ
 	jobID := chi.URLParam(r, "id")
 	rawArtifactID := chi.URLParam(r, "artifactId")
 
-	artifactID, parseErr := strconv.ParseInt(rawArtifactID, 10, 64)
+	artifactID, parseErr := strconv.ParseInt(rawArtifactID, intBase, int64Bits)
 	if parseErr != nil {
 		http.Error(w, "invalid artifact id", http.StatusBadRequest)
 

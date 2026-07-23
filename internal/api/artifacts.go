@@ -12,10 +12,23 @@ import (
 	"github.com/sdroscher/job-search-pipeline/internal/db"
 )
 
+const dirPerms = 0o750
+
 type createArtifactRequest struct {
 	Type        string `json:"type"`
 	Filepath    string `json:"filepath"`
 	ProfileHash string `json:"profile_hash"`
+}
+
+func (req createArtifactRequest) hasRequiredFields() bool {
+	return req.Type != "" && req.Filepath != "" && req.ProfileHash != ""
+}
+
+func (cfg Config) pathInOutputDir(path string) bool {
+	cleanPath := filepath.Clean(path)
+	outputDir := filepath.Clean(cfg.OutputDir)
+
+	return strings.HasPrefix(cleanPath, outputDir+string(filepath.Separator)) || cleanPath == outputDir
 }
 
 func (s *Server) handleListArtifacts(w http.ResponseWriter, r *http.Request) {
@@ -50,12 +63,14 @@ func (s *Server) handleCreateArtifact(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
 	_, jobErr := s.store.GetJob(r.Context(), id)
+	if errors.Is(jobErr, sql.ErrNoRows) {
+		http.Error(w, "job not found", http.StatusNotFound)
+
+		return
+	}
+
 	if jobErr != nil {
-		if errors.Is(jobErr, sql.ErrNoRows) {
-			http.Error(w, "job not found", http.StatusNotFound)
-		} else {
-			http.Error(w, jobErr.Error(), http.StatusInternalServerError)
-		}
+		http.Error(w, jobErr.Error(), http.StatusInternalServerError)
 
 		return
 	}
@@ -69,23 +84,19 @@ func (s *Server) handleCreateArtifact(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Type == "" || req.Filepath == "" || req.ProfileHash == "" {
+	if !req.hasRequiredFields() {
 		http.Error(w, "type, filepath, and profile_hash required", http.StatusBadRequest)
 
 		return
 	}
 
-	// Validate that the requested filepath is contained within the configured output directory.
-	cleanPath := filepath.Clean(req.Filepath)
-	outputDir := filepath.Clean(s.config.OutputDir)
-
-	if !strings.HasPrefix(cleanPath, outputDir+string(filepath.Separator)) && cleanPath != outputDir {
+	if !s.config.pathInOutputDir(req.Filepath) {
 		http.Error(w, "filepath must be under output directory", http.StatusBadRequest)
 
 		return
 	}
 
-	mkdirErr := os.MkdirAll(filepath.Dir(req.Filepath), 0o750)
+	mkdirErr := os.MkdirAll(filepath.Dir(req.Filepath), dirPerms)
 	if mkdirErr != nil {
 		http.Error(w, "cannot create output dir", http.StatusInternalServerError)
 

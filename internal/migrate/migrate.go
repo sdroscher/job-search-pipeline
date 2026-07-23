@@ -34,13 +34,11 @@ func Run(db *sql.DB) error {
 	return nil
 }
 
-// addColumnIfMissing adds column to table if it does not already exist.
-// SQLite does not support ALTER TABLE … ADD COLUMN IF NOT EXISTS, so we
-// inspect PRAGMA table_info first.
-func addColumnIfMissing(ctx context.Context, db *sql.DB, table, column, colType string) error {
+// columnExists reports whether column already exists in table.
+func columnExists(ctx context.Context, db *sql.DB, table, column string) (bool, error) {
 	rows, err := db.QueryContext(ctx, "PRAGMA table_info("+table+")")
 	if err != nil {
-		return fmt.Errorf("table_info %s: %w", table, err)
+		return false, fmt.Errorf("table_info %s: %w", table, err)
 	}
 
 	defer rows.Close()
@@ -52,17 +50,28 @@ func addColumnIfMissing(ctx context.Context, db *sql.DB, table, column, colType 
 
 		scanErr := rows.Scan(&cid, &name, &typeName, &notNull, &defaultVal, &pk)
 		if scanErr != nil {
-			return fmt.Errorf("scan table_info %s: %w", table, scanErr)
+			return false, fmt.Errorf("scan table_info %s: %w", table, scanErr)
 		}
 
 		if name == column {
-			return nil
+			return true, nil
 		}
 	}
 
-	rowsErr := rows.Err()
-	if rowsErr != nil {
-		return fmt.Errorf("table_info %s: %w", table, rowsErr)
+	return false, rows.Err()
+}
+
+// addColumnIfMissing adds column to table if it does not already exist.
+// SQLite does not support ALTER TABLE … ADD COLUMN IF NOT EXISTS, so we
+// inspect PRAGMA table_info first.
+func addColumnIfMissing(ctx context.Context, db *sql.DB, table, column, colType string) error {
+	exists, err := columnExists(ctx, db, table, column)
+	if err != nil {
+		return err
+	}
+
+	if exists {
+		return nil
 	}
 
 	_, err = db.ExecContext(ctx, "ALTER TABLE "+table+" ADD COLUMN "+column+" "+colType)

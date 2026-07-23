@@ -19,12 +19,14 @@ func (s *Server) handleCreateActivity(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
 	_, jobErr := s.store.GetJob(r.Context(), id)
+	if errors.Is(jobErr, sql.ErrNoRows) {
+		http.Error(w, "job not found", http.StatusNotFound)
+
+		return
+	}
+
 	if jobErr != nil {
-		if errors.Is(jobErr, sql.ErrNoRows) {
-			http.Error(w, "job not found", http.StatusNotFound)
-		} else {
-			http.Error(w, jobErr.Error(), http.StatusInternalServerError)
-		}
+		http.Error(w, jobErr.Error(), http.StatusInternalServerError)
 
 		return
 	}

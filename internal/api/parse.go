@@ -10,7 +10,7 @@ type parseRequest struct {
 	URL string `json:"url"`
 }
 
-func (s *Server) handleParse(w http.ResponseWriter, r *http.Request) {
+func (*Server) handleParse(w http.ResponseWriter, r *http.Request) {
 	var req parseRequest
 
 	err := readJSON(r, &req)

@@ -64,9 +64,7 @@ func FetchJobrightFromURL(ctx context.Context, fetchURL, sourceURL string) (*Par
 }
 
 // jobrightTitleCompany extracts title and company from meta tags and page content.
-func jobrightTitleCompany(doc *goquery.Document) (string, string) {
-	var title, company string
-
+func jobrightTitleCompany(doc *goquery.Document) (title, company string) {
 	ogTitle, _ := doc.Find(`meta[property="og:title"]`).Attr("content")
 	ogTitle = strings.TrimSpace(ogTitle)
 

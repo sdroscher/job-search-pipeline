@@ -47,16 +47,20 @@ func FetchGreenhouseFromAPI(ctx context.Context, apiURL, sourceURL string) (*Par
 		return nil, fmt.Errorf("status %d: %w", resp.StatusCode, errGHAPIStatus)
 	}
 
+	type ghLocation struct {
+		Name string `json:"name"`
+	}
+
+	type ghDepartment struct {
+		Name string `json:"name"`
+	}
+
 	var data struct {
-		Title       string `json:"title"`
-		AbsoluteURL string `json:"absolute_url"`
-		Content     string `json:"content"`
-		Location    struct {
-			Name string `json:"name"`
-		} `json:"location"`
-		Departments []struct {
-			Name string `json:"name"`
-		} `json:"departments"`
+		Title       string         `json:"title"`
+		AbsoluteURL string         `json:"absolute_url"`
+		Content     string         `json:"content"`
+		Location    ghLocation     `json:"location"`
+		Departments []ghDepartment `json:"departments"`
 	}
 
 	decodeErr := json.NewDecoder(resp.Body).Decode(&data)

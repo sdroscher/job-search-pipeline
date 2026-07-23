@@ -47,18 +47,24 @@ func FetchLeverFromAPI(ctx context.Context, apiURL, sourceURL string) (*ParsedJo
 		return nil, fmt.Errorf("%w: %d", errLeverAPIStatus, resp.StatusCode)
 	}
 
-	var data struct {
-		Text       string `json:"text"`
-		Categories struct {
-			Location string `json:"location"`
-			Team     string `json:"team"`
-		} `json:"categories"`
-		Description string `json:"description"`
-		Lists       []struct {
-			Text    string `json:"text"`
-			Content string `json:"content"`
-		} `json:"lists"`
+	type leverCategories struct {
+		Location string `json:"location"`
+		Team     string `json:"team"`
 	}
+
+	type leverList struct {
+		Text    string `json:"text"`
+		Content string `json:"content"`
+	}
+
+	type leverResponse struct {
+		Text        string          `json:"text"`
+		Categories  leverCategories `json:"categories"`
+		Description string          `json:"description"`
+		Lists       []leverList     `json:"lists"`
+	}
+
+	var data leverResponse
 
 	decodeErr := json.NewDecoder(resp.Body).Decode(&data)
 	if decodeErr != nil {

@@ -7,8 +7,14 @@ linters:
     - embeddedstructfieldcheck
     - exhaustruct
     - funcorder
+    - funlen # using revive function-length instead
+    - gocognit # using revive cognitive-complexity instead
+    - gocyclo # using revive cyclomatic instead
+    - goconst # using revive add-constant instead
+    - gomodguard # deprecated in favour of gomodguard_v2
     - lll
     - mnd
+    - nonamedreturns # conflicts with revive confusing-results which requires named returns for same-type results
     - paralleltest
     - protogetter
     - wrapcheck
@@ -17,6 +23,8 @@ linters:
   settings:
     cyclop:
       max-complexity: 12
+    exhaustive:
+      default-signifies-exhaustive: true
     depguard:
       rules:
         main:
@@ -27,6 +35,93 @@ linters:
               desc: Should be replaced by standard lib errors package
     funlen:
       lines: 70
+    revive:
+      directives:
+        - name: specify-disable-reason
+          severity: error
+      enable-default-rules: true
+      rules:
+        - name: add-constant
+          arguments:
+            - max-lit-count: "3"
+              allow-strs: '""'
+              allow-ints: "0,1,2"
+              allow-floats: "0.0,0.,1.0,1.,2.0,2."
+        - name: atomic
+        - name: banned-characters
+        - name: bare-return
+        - name: bool-literal-in-expr
+        - name: call-to-gc
+        - name: cognitive-complexity
+        - name: confusing-naming
+        - name: confusing-results
+        - name: constant-logical-expr
+        - name: cyclomatic
+        - name: datarace
+        - name: deep-exit
+        - name: defer
+        - name: duplicated-imports
+        - name: early-return
+        - name: empty-lines
+        - name: enforce-map-style
+        - name: enforce-slice-style
+        - name: enforce-switch-style
+        - name: epoch-naming
+        - name: flag-parameter
+        - name: forbidden-call-in-wg-go
+        - name: function-length
+        - name: function-result-limit
+        - name: get-return
+        - name: identical-branches
+        - name: identical-ifelseif-branches
+        - name: identical-ifelseif-conditions
+        - name: identical-switch-branches
+        - name: identical-switch-conditions
+        - name: if-return
+        - name: import-alias-naming
+        - name: import-shadowing
+        - name: imports-blocklist
+          arguments:
+            - "crypto/md5"
+            - "crypto/sha1"
+            - "github.com/golang/mock" # use go.uber.com/mock
+            - "github.com/golang/protobuf" # use google.golang.org/protobuf
+            - "github.com/pkg/errors" # use errors package
+            - "io/ioutil" # use io or os packages directly
+        - name: inefficient-map-lookup
+        - name: max-control-nesting
+        - name: max-public-structs
+        - name: modifies-parameter
+        - name: modifies-value-receiver
+        - name: nested-structs
+        - name: optimize-operands-order
+        - name: package-naming
+        - name: package-directory-mismatch
+        - name: range-val-address
+        - name: range-val-in-closure
+        - name: redundant-build-tag
+        - name: redundant-import-alias
+        - name: redundant-test-main-exit
+        - name: string-of-int
+        - name: struct-tag
+        - name: time-date
+        - name: time-equal
+        - name: unchecked-type-assertion
+        - name: unconditional-recursion
+        - name: unexported-naming
+        - name: unhandled-error
+        - name: unnecessary-if
+        - name: unnecessary-format
+        - name: unnecessary-stmt
+        - name: unused-receiver
+        - name: use-any
+        - name: use-errors-new
+        - name: use-fmt-print
+        - name: use-slices-sort
+        - name: use-waitgroup-go
+        - name: useless-break
+        - name: useless-fallthrough
+        - name: waitgroup-by-value
     tagliatelle:
       case:
         rules:

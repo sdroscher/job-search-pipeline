@@ -35,6 +35,10 @@ func parseCompanyValues(s *string) []ui.CompanyValue {
 	return out
 }
 
+func stageParamsPresent(newStage, fromStage string) bool {
+	return newStage != "" && fromStage != ""
+}
+
 // isValidCloseStage checks if a stage is a valid close target.
 // Valid close stages are terminal states or the reopen target.
 func isValidCloseStage(stage string) bool {
@@ -121,12 +125,14 @@ func (h *JobPanelHandler) HandleUpdateStage(w http.ResponseWriter, r *http.Reque
 	}
 
 	_, err = h.store.UpdateJob(r.Context(), db.UpdateJobParams{ID: id, Stage: &stage})
+	if errors.Is(err, sql.ErrNoRows) {
+		http.Error(w, "not found", http.StatusNotFound)
+
+		return
+	}
+
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			http.Error(w, "not found", http.StatusNotFound)
-		} else {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 
 		return
 	}
@@ -139,13 +145,7 @@ func (h *JobPanelHandler) HandleUpdateStage(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	colJobs := make([]db.Job, 0)
-	for _, job := range jobs {
-		if job.Stage == stage {
-			colJobs = append(colJobs, job)
-		}
-	}
-
+	colJobs := jobsForStage(jobs, stage)
 	staleJobs := h.store.StaleJobSet(r.Context(), colJobs)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -172,7 +172,7 @@ func (h *JobPanelHandler) HandleCloseJob(w http.ResponseWriter, r *http.Request)
 	newStage := r.FormValue("stage")
 	fromStage := r.FormValue("from_stage")
 
-	if newStage == "" || fromStage == "" {
+	if !stageParamsPresent(newStage, fromStage) {
 		http.Error(w, "stage and from_stage required", http.StatusBadRequest)
 
 		return
@@ -187,12 +187,14 @@ func (h *JobPanelHandler) HandleCloseJob(w http.ResponseWriter, r *http.Request)
 	ctx := r.Context()
 
 	_, err := h.store.UpdateJob(ctx, db.UpdateJobParams{ID: jobID, Stage: &newStage})
+	if errors.Is(err, sql.ErrNoRows) {
+		http.Error(w, "not found", http.StatusNotFound)
+
+		return
+	}
+
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			http.Error(w, "not found", http.StatusNotFound)
-		} else {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 
 		return
 	}

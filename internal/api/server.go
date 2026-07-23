@@ -11,6 +11,8 @@ import (
 	"github.com/sdroscher/job-search-pipeline/internal/ui"
 )
 
+const routeRoot = "/"
+
 // Config holds API-layer configuration.
 type Config struct {
 	OutputDir string
@@ -63,7 +65,7 @@ func (s *Server) Router() http.Handler {
 	})
 
 	// UI pages
-	r.Get("/", s.handleIndex)
+	r.Get(routeRoot, s.handleIndex)
 	r.Get("/profile", s.handleProfilePage)
 	r.Post("/profile", s.handleProfileFormPost)
 
@@ -71,13 +73,13 @@ func (s *Server) Router() http.Handler {
 }
 
 func (s *Server) profileRoutes(r chi.Router) {
-	r.Get("/", s.handleGetProfile)
-	r.Put("/", s.handlePutProfile)
+	r.Get(routeRoot, s.handleGetProfile)
+	r.Put(routeRoot, s.handlePutProfile)
 }
 
 func (s *Server) jobRoutes(r chi.Router) {
-	r.Get("/", s.handleListJobs)
-	r.Post("/", s.handleCreateJob)
+	r.Get(routeRoot, s.handleListJobs)
+	r.Post(routeRoot, s.handleCreateJob)
 	r.Route("/{id}", func(r chi.Router) {
 		r.Get("/", s.handleGetJob)
 		r.Patch("/", s.handleUpdateJob)

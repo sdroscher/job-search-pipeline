@@ -84,18 +84,21 @@ func Parse(ctx context.Context, rawURL string) (*ParsedJob, error) {
 	case ATSJobright:
 		return FetchJobright(ctx, rawURL)
 	case ATSLinkedIn, ATSIndeed, ATSGlassdoor:
-		// These require login or are JS-heavy; fall back to HTML scrape but preserve source name
-		job, err := ScrapeHTML(ctx, rawURL)
-		if err != nil {
-			return nil, err
-		}
-
-		job.Source = string(DetectATS(rawURL))
-
-		return job, nil
-	case ATSHTML:
-		return ScrapeHTML(ctx, rawURL)
+		// These require login or are JS-heavy; scrape HTML but preserve detected source name.
+		return scrapeWithSource(ctx, rawURL)
 	default:
 		return ScrapeHTML(ctx, rawURL)
 	}
+}
+
+// scrapeWithSource falls back to HTML scraping and stamps the detected ATS name as the source.
+func scrapeWithSource(ctx context.Context, rawURL string) (*ParsedJob, error) {
+	job, err := ScrapeHTML(ctx, rawURL)
+	if err != nil {
+		return nil, err
+	}
+
+	job.Source = string(DetectATS(rawURL))
+
+	return job, nil
 }

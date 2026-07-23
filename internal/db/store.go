@@ -32,6 +32,16 @@ func NewStore(dsn string) (*Store, error) {
 
 func (s *Store) Close() error { return s.db.Close() }
 
+func hasStaleArtifact(artifacts []Artifact) bool {
+	for _, a := range artifacts {
+		if a.Stale == 1 {
+			return true
+		}
+	}
+
+	return false
+}
+
 // StaleJobSet returns a set of job IDs that have at least one stale artifact.
 func (s *Store) StaleJobSet(ctx context.Context, jobs []Job) map[string]bool {
 	stale := make(map[string]bool, len(jobs))
@@ -44,12 +54,8 @@ func (s *Store) StaleJobSet(ctx context.Context, jobs []Job) map[string]bool {
 			continue
 		}
 
-		for _, artifact := range artifacts {
-			if artifact.Stale == 1 {
-				stale[job.ID] = true
-
-				break
-			}
+		if hasStaleArtifact(artifacts) {
+			stale[job.ID] = true
 		}
 	}
 

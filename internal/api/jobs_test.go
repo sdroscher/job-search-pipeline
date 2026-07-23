@@ -16,6 +16,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	headerContentType = "Content-Type"
+	contentTypeJSON   = "application/json"
+)
+
 func newServer(t *testing.T) (*httptest.Server, *db.Store) {
 	t.Helper()
 	store := db.NewTestStore(t)
@@ -57,7 +62,7 @@ func TestCreateJob_ThenGet(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	resp, err := http.Post(ts.URL+"/api/jobs", "application/json", bytes.NewReader(body)) //nolint:noctx
+	resp, err := http.Post(ts.URL+"/api/jobs", contentTypeJSON, bytes.NewReader(body)) //nolint:noctx
 	require.NoError(t, err)
 
 	defer resp.Body.Close()
@@ -105,7 +110,7 @@ func TestUpdateJob_Stage(t *testing.T) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, ts.URL+"/api/jobs/job-1", bytes.NewReader(body))
 	require.NoError(t, err)
 
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(headerContentType, contentTypeJSON)
 
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
@@ -171,7 +176,7 @@ func TestUpdateJob_NotFound(t *testing.T) {
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodPatch, ts.URL+"/api/jobs/nonexistent", bytes.NewReader(body))
 	require.NoError(t, err)
 
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(headerContentType, contentTypeJSON)
 
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
@@ -194,7 +199,7 @@ func TestCreateActivity_UnknownJob(t *testing.T) {
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, ts.URL+"/api/jobs/no-such-job/activity", bytes.NewReader(body))
 	require.NoError(t, err)
 
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(headerContentType, contentTypeJSON)
 
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
@@ -255,7 +260,7 @@ func TestCreateArtifact_PathTraversal(t *testing.T) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, ts.URL+"/api/jobs/job-path/artifacts", bytes.NewReader(body))
 	require.NoError(t, err)
 
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(headerContentType, contentTypeJSON)
 
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
@@ -278,7 +283,7 @@ func TestCreateArtifact_UnknownJob(t *testing.T) {
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, ts.URL+"/api/jobs/no-such-job/artifacts", bytes.NewReader(body))
 	require.NoError(t, err)
 
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(headerContentType, contentTypeJSON)
 
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
@@ -297,7 +302,7 @@ func TestParseDate_InvalidFormat(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	resp, err := http.Post(ts.URL+"/api/jobs", "application/json", bytes.NewReader(body)) //nolint:noctx
+	resp, err := http.Post(ts.URL+"/api/jobs", contentTypeJSON, bytes.NewReader(body)) //nolint:noctx
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
@@ -312,12 +317,12 @@ func TestCreateJob_DuplicateID(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	resp1, err := http.Post(ts.URL+"/api/jobs", "application/json", bytes.NewReader(jobBody)) //nolint:noctx
+	resp1, err := http.Post(ts.URL+"/api/jobs", contentTypeJSON, bytes.NewReader(jobBody)) //nolint:noctx
 	require.NoError(t, err)
 	resp1.Body.Close()
 	require.Equal(t, http.StatusCreated, resp1.StatusCode)
 
-	resp2, err := http.Post(ts.URL+"/api/jobs", "application/json", bytes.NewReader(jobBody)) //nolint:noctx
+	resp2, err := http.Post(ts.URL+"/api/jobs", contentTypeJSON, bytes.NewReader(jobBody)) //nolint:noctx
 	require.NoError(t, err)
 	resp2.Body.Close()
 	assert.Equal(t, http.StatusConflict, resp2.StatusCode)
@@ -350,7 +355,7 @@ func TestCreateActivity_HappyPath(t *testing.T) {
 	body, err := json.Marshal(map[string]any{"action": "Interviewed", "notes": "went well"})
 	require.NoError(t, err)
 
-	resp, err := http.Post(ts.URL+"/api/jobs/j1/activity", "application/json", bytes.NewReader(body)) //nolint:noctx
+	resp, err := http.Post(ts.URL+"/api/jobs/j1/activity", contentTypeJSON, bytes.NewReader(body)) //nolint:noctx
 	require.NoError(t, err)
 	defer resp.Body.Close()
 

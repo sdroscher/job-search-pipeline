@@ -38,9 +38,14 @@ func (s *StoreSuite) TestUpsertAndGetProfile() {
 	s.Equal("# My Resume", got.ResumeMd)
 }
 
+const (
+	testYear = 2026
+	testDay  = 20
+)
+
 func (s *StoreSuite) TestCreateAndListJobs() {
 	ctx := context.Background()
-	now := time.Date(2026, 7, 20, 0, 0, 0, 0, time.UTC)
+	now := time.Date(testYear, time.July, testDay, 0, 0, 0, 0, time.UTC)
 
 	_, err := s.store.CreateJob(ctx, db.CreateJobParams{
 		ID:           "acme-staff-swe",
@@ -61,7 +66,7 @@ func (s *StoreSuite) TestCreateAndListJobs() {
 
 func (s *StoreSuite) TestWithTx_Commit() {
 	ctx := context.Background()
-	now := time.Date(2026, 7, 20, 0, 0, 0, 0, time.UTC)
+	now := time.Date(testYear, time.July, testDay, 0, 0, 0, 0, time.UTC)
 
 	err := s.store.WithTx(ctx, func(q *db.Queries) error {
 		_, txErr := q.CreateJob(ctx, db.CreateJobParams{

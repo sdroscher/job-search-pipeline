@@ -35,12 +35,16 @@ type ashbyNextDataPosting struct {
 	LocationRequirement     string `json:"locationRequirement"`     //nolint:tagliatelle
 }
 
+type ashbyNextDataPageProps struct {
+	JobPosting ashbyNextDataPosting `json:"jobPosting"` //nolint:tagliatelle
+}
+
+type ashbyNextDataProps struct {
+	PageProps ashbyNextDataPageProps `json:"pageProps"` //nolint:tagliatelle
+}
+
 type ashbyNextData struct {
-	Props struct {
-		PageProps struct {
-			JobPosting ashbyNextDataPosting `json:"jobPosting"` //nolint:tagliatelle
-		} `json:"pageProps"` //nolint:tagliatelle
-	} `json:"props"`
+	Props ashbyNextDataProps `json:"props"`
 }
 
 const ashbyBoardAPIBase = "https://api.ashbyhq.com/posting-api/job-board"

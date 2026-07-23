@@ -1,7 +1,7 @@
 package api
 
 import (
-	"crypto/md5" //nolint:gosec
+	"crypto/sha256"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -48,7 +48,7 @@ func (s *Server) handleProfileFormPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hash := fmt.Sprintf("%x", md5.Sum([]byte(resumeMd))) //nolint:gosec
+	hash := fmt.Sprintf("%x", sha256.Sum256([]byte(resumeMd)))
 
 	_, upsertErr := s.store.UpsertProfile(r.Context(), db.UpsertProfileParams{
 		ResumeMd:          resumeMd,
@@ -87,12 +87,17 @@ func optString(val string) *string {
 	return &val
 }
 
+const (
+	intBase   = 10
+	int64Bits = 64
+)
+
 func optInt64(val string) *int64 {
 	if val == "" {
 		return nil
 	}
 
-	parsed, err := strconv.ParseInt(val, 10, 64)
+	parsed, err := strconv.ParseInt(val, intBase, int64Bits)
 	if err != nil {
 		return nil
 	}

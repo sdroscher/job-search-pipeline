@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -40,13 +41,15 @@ func TestProfilePage_GetWithProfile(t *testing.T) {
 	require.Contains(t, w.Body.String(), "# My Resume")
 }
 
+const testSalaryMin = 100000
+
 func TestProfilePage_Post(t *testing.T) {
 	store := db.NewTestStore(t)
 	srv := api.NewServer(store, api.Config{OutputDir: t.TempDir()})
 
 	form := url.Values{}
 	form.Set("resume_md", "# Updated Resume")
-	form.Set("salary_min", "100000")
+	form.Set("salary_min", strconv.Itoa(testSalaryMin))
 	form.Set("remote_pref", "remote-only")
 
 	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/profile", strings.NewReader(form.Encode()))
@@ -61,5 +64,5 @@ func TestProfilePage_Post(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "# Updated Resume", saved.ResumeMd)
 	require.NotNil(t, saved.SalaryMin)
-	require.Equal(t, int64(100000), *saved.SalaryMin)
+	require.Equal(t, int64(testSalaryMin), *saved.SalaryMin)
 }

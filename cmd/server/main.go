@@ -17,16 +17,23 @@ import (
 	"github.com/sdroscher/job-search-pipeline/internal/db"
 )
 
+const (
+	dirPerms     = 0o750
+	readTimeout  = 15 * time.Second
+	writeTimeout = 30 * time.Second
+	idleTimeout  = 60 * time.Second
+)
+
 func main() {
 	var cfg config.Config
 	kong.Parse(&cfg)
 
-	err := os.MkdirAll(cfg.DataDir, 0o750)
+	err := os.MkdirAll(cfg.DataDir, dirPerms)
 	if err != nil {
 		log.Fatalf("create data dir: %v", err)
 	}
 
-	err = os.MkdirAll(cfg.OutputDir, 0o750)
+	err = os.MkdirAll(cfg.OutputDir, dirPerms)
 	if err != nil {
 		log.Fatalf("create output dir: %v", err)
 	}
@@ -44,9 +51,9 @@ func main() {
 	server := &http.Server{
 		Addr:         addr,
 		Handler:      srv.Router(),
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 30 * time.Second,
-		IdleTimeout:  60 * time.Second,
+		ReadTimeout:  readTimeout,
+		WriteTimeout: writeTimeout,
+		IdleTimeout:  idleTimeout,
 	}
 
 	go func() {

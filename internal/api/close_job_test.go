@@ -14,6 +14,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	testJobID     = "acme-swe"
+	stageApplied  = "Applied"
+	stageRejected = "Rejected"
+)
+
 func seedJob(t *testing.T, store *db.Store, id, stage string) db.Job {
 	t.Helper()
 
@@ -32,13 +38,13 @@ func seedJob(t *testing.T, store *db.Store, id, stage string) db.Job {
 
 func TestCloseJob_RemovesFromActiveBoard(t *testing.T) {
 	store := db.NewTestStore(t)
-	seedJob(t, store, "acme-swe", "Applied")
+	seedJob(t, store, testJobID, stageApplied)
 
 	srv := api.NewServer(store, api.Config{OutputDir: t.TempDir()})
 
 	form := url.Values{}
-	form.Set("stage", "Rejected")
-	form.Set("from_stage", "Applied")
+	form.Set("stage", stageRejected)
+	form.Set("from_stage", stageApplied)
 	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/panels/jobs/acme-swe/close",
 		strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -56,20 +62,20 @@ func TestCloseJob_RemovesFromActiveBoard(t *testing.T) {
 	assert.Contains(t, body, "closed-section")
 
 	// DB: job stage is now Rejected
-	job, err := store.GetJob(t.Context(), "acme-swe")
+	job, err := store.GetJob(t.Context(), testJobID)
 	require.NoError(t, err)
-	assert.Equal(t, "Rejected", job.Stage)
+	assert.Equal(t, stageRejected, job.Stage)
 }
 
 func TestCloseJob_Reopen(t *testing.T) {
 	store := db.NewTestStore(t)
-	seedJob(t, store, "acme-swe", "Rejected")
+	seedJob(t, store, testJobID, stageRejected)
 
 	srv := api.NewServer(store, api.Config{OutputDir: t.TempDir()})
 
 	form := url.Values{}
 	form.Set("stage", "Evaluated")
-	form.Set("from_stage", "Rejected")
+	form.Set("from_stage", stageRejected)
 	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/panels/jobs/acme-swe/close",
 		strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -83,14 +89,14 @@ func TestCloseJob_Reopen(t *testing.T) {
 	// OOB has Evaluated column
 	assert.Contains(t, body, `data-stage="Evaluated"`)
 
-	job, err := store.GetJob(t.Context(), "acme-swe")
+	job, err := store.GetJob(t.Context(), testJobID)
 	require.NoError(t, err)
 	assert.Equal(t, "Evaluated", job.Stage)
 }
 
 func TestListJobs_ExcludesClosedStages(t *testing.T) {
 	store := db.NewTestStore(t)
-	seedJob(t, store, "active-job", "Applied")
+	seedJob(t, store, "active-job", stageApplied)
 	seedJob(t, store, "closed-job", "Rejected")
 
 	jobs, err := store.ListJobs(t.Context())
@@ -103,8 +109,8 @@ func TestListJobs_ExcludesClosedStages(t *testing.T) {
 
 func TestListClosedJobs(t *testing.T) {
 	store := db.NewTestStore(t)
-	seedJob(t, store, "active-job", "Applied")
-	seedJob(t, store, "rejected-job", "Rejected")
+	seedJob(t, store, "active-job", stageApplied)
+	seedJob(t, store, "rejected-job", stageRejected)
 	seedJob(t, store, "declined-job", "Declined")
 
 	closed, err := store.ListClosedJobs(t.Context())

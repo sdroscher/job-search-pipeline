@@ -15,6 +15,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const contentTypeJSON = "application/json"
+
 type testServer struct {
 	*httptest.Server
 	outputDir string
@@ -40,7 +42,7 @@ func createJob(t *testing.T, ts *testServer, id, company, role, stage string) ma
 	})
 	require.NoError(t, err)
 
-	resp, err := http.Post(ts.URL+"/api/jobs", "application/json", bytes.NewReader(body)) //nolint:noctx
+	resp, err := http.Post(ts.URL+"/api/jobs", contentTypeJSON, bytes.NewReader(body)) //nolint:noctx
 	require.NoError(t, err)
 	defer resp.Body.Close()
 	require.Equal(t, http.StatusCreated, resp.StatusCode)
@@ -60,7 +62,7 @@ func putProfile(t *testing.T, ts *testServer, resumeMD string) map[string]any {
 
 	req, err := http.NewRequest(http.MethodPut, ts.URL+"/api/profile", bytes.NewReader(body)) //nolint:noctx
 	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Type", contentTypeJSON)
 
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
@@ -105,7 +107,7 @@ func createArtifact(t *testing.T, ts *testServer, jobID, artifactType, filename,
 		bytes.NewReader(body),
 	)
 	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Type", contentTypeJSON)
 
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
@@ -126,7 +128,7 @@ func createActivity(t *testing.T, ts *testServer, jobID, action string) {
 		bytes.NewReader(body),
 	)
 	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Type", contentTypeJSON)
 
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)

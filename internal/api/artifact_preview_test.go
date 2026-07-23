@@ -13,6 +13,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const filePerms = 0o600
+
 func TestArtifactPreview(t *testing.T) {
 	store := db.NewTestStore(t)
 	srv := api.NewServer(store, api.Config{OutputDir: t.TempDir()})
@@ -27,7 +29,7 @@ func TestArtifactPreview(t *testing.T) {
 	tmpDir := t.TempDir()
 	content := "# Test Resume\n\nSome content here."
 	fPath := filepath.Join(tmpDir, "resume-acme-swe.md")
-	require.NoError(t, os.WriteFile(fPath, []byte(content), 0o600))
+	require.NoError(t, os.WriteFile(fPath, []byte(content), filePerms))
 
 	artifact, err := store.CreateArtifact(ctx, db.CreateArtifactParams{
 		JobID: job.ID, Type: "resume", Filepath: fPath, ProfileHash: "abc123",

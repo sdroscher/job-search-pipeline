@@ -11,8 +11,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const testJobgetherURL = "https://jobgether.com/offer/abc123"
+
 func TestDetectATS_Jobgether(t *testing.T) {
-	assert.Equal(t, parser.ATSJobgether, parser.DetectATS("https://jobgether.com/offer/abc123"))
+	assert.Equal(t, parser.ATSJobgether, parser.DetectATS(testJobgetherURL))
 	assert.Equal(t, parser.ATSJobgether, parser.DetectATS("https://jobgether.com/en/jobs/456"))
 }
 
@@ -29,13 +31,13 @@ func TestFetchJobgetherFromURL_Happy(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	job, err := parser.FetchJobgetherFromURL(context.Background(), srv.URL, "https://jobgether.com/offer/abc123")
+	job, err := parser.FetchJobgetherFromURL(context.Background(), srv.URL, testJobgetherURL)
 	require.NoError(t, err)
 	require.NotNil(t, job)
 	assert.Equal(t, "Senior Backend Engineer at Acme Corp", job.Title)
 	assert.Equal(t, "Acme Corp", job.Company)
 	assert.Equal(t, "Jobgether", job.Source)
-	assert.Equal(t, "https://jobgether.com/offer/abc123", job.SourceURL)
+	assert.Equal(t, testJobgetherURL, job.SourceURL)
 	assert.NotEmpty(t, job.BodyMD)
 }
 
@@ -45,7 +47,7 @@ func TestFetchJobgetherFromURL_NonOK(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	job, err := parser.FetchJobgetherFromURL(context.Background(), srv.URL, "https://jobgether.com/offer/abc123")
+	job, err := parser.FetchJobgetherFromURL(context.Background(), srv.URL, testJobgetherURL)
 	assert.Nil(t, job)
 	assert.ErrorIs(t, err, parser.ErrJobgetherHTTPStatus)
 }
