@@ -1,4 +1,5 @@
 job-search-pipeline
+tmp/
 .superpowers/
 .env
 .idea/

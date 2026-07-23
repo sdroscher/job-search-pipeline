@@ -5,7 +5,7 @@ dotenv: ['.env']
 tasks:
   dev:
     deps: [generate]
-    cmd: go run ./cmd/server
+    cmd: air
     env:
       PORT: '{{.PORT | default "8080"}}'
 
