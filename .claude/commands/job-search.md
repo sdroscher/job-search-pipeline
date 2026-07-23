@@ -99,6 +99,8 @@ Generate a tailored resume. Write to filesystem.
    - Adjust the summary/objective to use language from the JD
    - Surface specific technologies mentioned in the JD requirements
    - Do NOT invent experience — only reorder and reframe
+   - No em-dashes (`—`), en-dashes used as dashes, or AI-marker phrases ("leverage", "utilize", "dynamic", "proven track record", "passionate")
+   - Bullet points: action verb, specific outcome, no filler words
 4. Write the markdown to `$OUTPUT_DIR/resume-<company>-<role>.md` using the Write tool
 5. POST to `$BASE_URL/api/jobs/<job-id>/artifacts`:
    ```json
@@ -117,17 +119,28 @@ Generate a tailored resume. Write to filesystem.
 
 Generate a cover letter in the user's voice. Write to filesystem.
 
-1. GET `$BASE_URL/api/jobs/<job-id>`
-2. GET `$BASE_URL/api/profile` (use writing_voice_md if present, cover_letter_sample if present)
-3. Generate a 4-paragraph cover letter:
-   - P1: What drew the user to THIS company specifically — named values, specific tech, remote-first, etc. 2–3 sentences. Direct, warm. No clichés.
-   - P2: "My background maps directly to [team/role]" — one specific achievement story grounding the connection.
-   - P3: Three numbered achievements from the user's profile most relevant to the JD. Specific and measurable where possible.
-   - P4: Availability and closing invitation.
-   - Voice: modern professional, not corporate or hypey. Confident through specifics, not adjectives. Use the writing_voice_md guide if provided.
-4. Write to `$OUTPUT_DIR/cover-letter-<company>-<role>.md`
-5. POST artifact + activity (same pattern as resume command)
-6. Confirm: "Cover letter written to <filepath>"
+1. GET `$BASE_URL/api/jobs/<job-id>` and GET `$BASE_URL/api/profile` in parallel.
+2. Before writing anything, ask the user two questions (ask both at once, don't split into separate turns):
+   - "What specifically drew you to this role or company?" — get something personal and concrete, not just a restatement of the job description. If they say "I don't know" or give a generic answer, push back once with a specific prompt: "Is there something about their product, stack, scale, team structure, or mission that caught your attention?"
+   - "Is there anything you want to make sure the cover letter highlights or avoids?"
+3. Generate a 4-paragraph cover letter using the user's answer to ground P1:
+   - **P1 (Hook):** Open with what the user told you drew them to this role. Make it feel personal and specific — not "I was excited to see this posting." Write from their perspective, in their voice. 2–3 sentences.
+   - **P2 (Connection):** One concrete achievement story that connects their background to the team's actual work. This should not duplicate a bullet point from the resume — go deeper, give context, explain the impact in a sentence the resume doesn't have room for.
+   - **P3 (Evidence):** Two or three specific accomplishments most relevant to the JD. These can reference the same work as the resume but must add something — quantify further, name the decision made, describe the outcome beyond what fits in a bullet.
+   - **P4 (Close):** Availability and a direct, warm invitation to talk. One or two sentences. No "I look forward to hearing from you at your earliest convenience."
+4. Style rules — enforce these without exception:
+   - No em-dashes (`—`). Use a comma, period, or rewrite the sentence.
+   - No en-dashes used as em-dashes. No ellipses for effect.
+   - No AI-marker phrases: "I am excited to", "I am passionate about", "I would be remiss", "delve", "leverage" (as a verb), "utilize", "I am writing to express", "dynamic", "synergy", "proven track record".
+   - No clichés: "hit the ground running", "wear many hats", "go-getter", "team player".
+   - Active voice. Sentences under 25 words where possible. Confident without being breathless.
+   - Use the `writing_voice_md` guide if provided. Use the `cover_letter_sample` only to calibrate tone and sentence rhythm — do not copy phrases.
+5. Check for duplication before writing:
+   - The cover letter must not open with the same sentence structure as the resume summary.
+   - P3 achievements should add context beyond what the resume bullet already says — if a bullet says "reduced latency by 40%", the cover letter can say what decision led to that, not just repeat the number.
+6. Write to `$OUTPUT_DIR/cover-letter-<company>-<role>.md`
+7. POST artifact + activity (same pattern as resume command)
+8. Confirm: "Cover letter written to <filepath>"
 
 ---
 
