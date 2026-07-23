@@ -34,6 +34,59 @@ Read the JSON response directly from curl's stdout. Do not redirect to files or 
 Set up your profile. Run this once.
 
 1. Ask the user to paste their resume (markdown or plain text), or provide a file path. If a path, read it with the Read tool.
+
+1.5. **Career context — build the depth that makes tailoring work.** Once you have the resume, say:
+
+   > "Got it. Before I ask the remaining profile questions, I'd like to get the story behind a few
+   > of your strongest pieces of work. This is what the cover-letter command draws on for the
+   > narrative paragraph, and what lets the resume command pick the right *angle* on each bullet
+   > rather than just matching keywords.
+   >
+   > I'll pick 2–3 things from your resume and ask about each one. Takes about 5–10 minutes.
+   > Want to do this now, or skip and come back later?"
+
+   If they say skip (or later), set `career_notes_md` to null and continue to step 2.
+
+   If they say yes:
+
+   a. **Select what to dig into.** Read their resume and identify the 2–3 most substantial
+      pieces of work — ideally from the most recent role, but pick whatever looks most impactful
+      or likely to be relevant to senior roles. Look for: complex systems, large scale, team
+      leadership, cross-org influence. Do not pick routine or incremental work.
+
+   b. **For each selected project/achievement, run this sequence (one project at a time):**
+
+      i. Open with: "Tell me about [X]. What was the situation when you picked this up, what
+         problem were you actually solving, and what did you end up building or deciding?"
+         Wait for their full answer.
+
+      ii. Ask **one targeted follow-up** based on what's still missing:
+          - If no scale/numbers: "Can you put numbers on it? Users affected, throughput,
+            team size, time saved, before vs. after — any metric that captures the scope."
+          - If the decision/tradeoff isn't clear: "What was the key decision you made, and
+            what were you choosing between?"
+          - If impact is vague: "What changed as a result — for the product, the team, or
+            the users?"
+
+      iii. Synthesise what they told you into a structured story block:
+           ```
+           ## [Role] — [Company] ([dates if known])
+           ### [Project name]
+           **Context:** [1–2 sentences on the situation]
+           **The problem:** [what was broken, missing, or needed]
+           **What I did:** [the approach and key decisions]
+           **Outcome:** [quantified result + broader impact]
+           **Cover letter angle:** [1 sentence — the most compelling way to open a P2 story
+             about this for a reader who cares about [scale / architecture / leadership /
+             quality — pick whichever fits]]
+           ```
+           Show it to them and ask: "Does this capture it accurately? Anything to add or change?"
+           Apply any edits.
+
+      iv. Move to the next project.
+
+   c. After covering all selected projects, compile the story blocks into `career_notes_md`.
+
 2. Ask: "Do you have a sample cover letter to upload? (optional)"
 3. Ask the following questions in sequence — don't batch them:
    - Desired salary range (number, in CAD unless otherwise specified)? Enter min and target.
@@ -93,7 +146,8 @@ Set up your profile. Run this once.
      "green_flags": "<freeform>",
      "red_flags": "<freeform>",
      "writing_voice_md": "<notes or null>",
-     "achievements_md": "<achievement bank markdown or null>"
+     "achievements_md": "<achievement bank markdown or null>",
+     "career_notes_md": "<career story blocks markdown or null>"
    }
    ```
    All fields except `resume_md` are optional (omit or null if not provided).
@@ -170,6 +224,12 @@ Generate a tailored resume. Write to filesystem.
 1. GET `$BASE_URL/api/jobs/<job-id>`
 2. GET `$BASE_URL/api/profile`
 3. Generate a tailored resume in markdown:
+   - If `profile.career_notes_md` is populated, read it before reordering anything. Use the
+     context, decisions, and outcomes it captures to understand *which aspect* of each bullet
+     best matches this JD — not just whether the bullet matches keywords. For example: if the
+     JD emphasises team leadership and career_notes describes how a project involved turning
+     around an underperforming team, lead with that angle even if the resume bullet currently
+     leads with a technical metric.
    - Reorder experience bullets so the most JD-relevant ones come first in each role
    - Adjust the summary/objective to use language from the JD
    - Surface specific technologies mentioned in the JD requirements
@@ -200,7 +260,7 @@ Generate a cover letter in the user's voice. Write to filesystem.
    - "Is there anything you want to make sure the cover letter highlights or avoids?"
 3. Generate a 4-paragraph cover letter using the user's answer to ground P1:
    - **P1 (Hook):** Open with what the user told you drew them to this role. Make it feel personal and specific — not "I was excited to see this posting." Write from their perspective, in their voice. 2–3 sentences.
-   - **P2 (Connection):** One concrete achievement story that connects their background to the team's actual work. This should not duplicate a bullet point from the resume — go deeper, give context, explain the impact in a sentence the resume doesn't have room for.
+   - **P2 (Connection):** One concrete achievement story that connects their background to the team's actual work. **If `profile.career_notes_md` is populated, use it as the primary source** — find the story block whose "Cover letter angle" best matches what this company is hiring for, and write from the full context (situation, decision, outcome) it contains. Do not just restate the resume bullet; write the version of the story that has room for the decision made and why it mattered. If career_notes is empty, draw from the resume but go deeper than the bullet — add context, name the decision, describe the outcome in a way the resume doesn't have space for.
    - **P3 (Evidence):** Two or three specific accomplishments most relevant to the JD. **If `profile.achievements_md` is populated, select bullets from it** — pick the 2–3 that best match what the JD is asking for (tech stack, scale, leadership, etc.). Adapt lightly for sentence flow but do not change the facts or invent new details. If `achievements_md` is empty, fall back to the resume, but find accomplishments that go beyond what the resume bullet says — quantify further, name the decision, describe the outcome.
    - **P4 (Close):** Availability and a direct, warm invitation to talk. One or two sentences. No "I look forward to hearing from you at your earliest convenience."
 4. Style rules — enforce these without exception:

@@ -26,6 +26,11 @@ func Run(db *sql.DB) error {
 		return err
 	}
 
+	err = addColumnIfMissing(ctx, db, "user_profile", "career_notes_md", "TEXT")
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

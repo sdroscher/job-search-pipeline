@@ -32,14 +32,16 @@ func TestRun_CreatesSchema(t *testing.T) {
 		require.NoError(t, tableErr, "table %q not found", table)
 	}
 
-	// verify achievements_md column exists in user_profile
-	var count int
+	// verify added columns exist in user_profile
+	for _, col := range []string{"achievements_md", "career_notes_md"} {
+		var count int
 
-	err = db.QueryRowContext(ctx,
-		"SELECT COUNT(*) FROM pragma_table_info('user_profile') WHERE name='achievements_md'",
-	).Scan(&count)
-	require.NoError(t, err)
-	assert.Equal(t, 1, count, "achievements_md column not found in user_profile")
+		colErr := db.QueryRowContext(ctx,
+			"SELECT COUNT(*) FROM pragma_table_info('user_profile') WHERE name=?", col,
+		).Scan(&count)
+		require.NoError(t, colErr)
+		assert.Equal(t, 1, count, "column %q not found in user_profile", col)
+	}
 }
 
 // TestRun_AddsColumnToExistingDB verifies that Run upgrades a database that was
@@ -65,11 +67,13 @@ func TestRun_AddsColumnToExistingDB(t *testing.T) {
 	err = migrate.Run(db)
 	require.NoError(t, err, "migrate.Run on existing db")
 
-	var count int
+	for _, col := range []string{"achievements_md", "career_notes_md"} {
+		var count int
 
-	err = db.QueryRowContext(ctx,
-		"SELECT COUNT(*) FROM pragma_table_info('user_profile') WHERE name='achievements_md'",
-	).Scan(&count)
-	require.NoError(t, err)
-	assert.Equal(t, 1, count, "achievements_md should be added to existing table")
+		colErr := db.QueryRowContext(ctx,
+			"SELECT COUNT(*) FROM pragma_table_info('user_profile') WHERE name=?", col,
+		).Scan(&count)
+		require.NoError(t, colErr)
+		assert.Equal(t, 1, count, "column %q should be added to existing table", col)
+	}
 }
