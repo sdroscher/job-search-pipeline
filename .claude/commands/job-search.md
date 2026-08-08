@@ -29,13 +29,180 @@ Read the JSON response directly from curl's stdout. Do not redirect to files or 
 
 ---
 
+# API contract
+
+**Read this section before your first write call. It is the only authoritative source for field names — do not infer a field name from a response you saw earlier, from a database column, or from what the field is called in this document's prose.**
+
+## Three rules
+
+1. **Never invent or guess a field name.** Only send names that appear in the tables below. If the field you want isn't listed, the endpoint does not accept it — say so rather than sending a plausible-looking alternative.
+2. **A 400 `json: unknown field "x"` means you used the wrong name.** The server rejects unknown fields instead of dropping them. Come back to this section, find the correct name, and resend. Do not strip the field and retry without it — that discards data the user gave you.
+3. **Verify every write.** `POST /api/jobs` and `PATCH /api/jobs/<id>` both return the full saved job. Read it and confirm the fields you set came back with the values you sent. If `role`, `company`, or `fit_score` came back empty or wrong, fix it with a PATCH before telling the user the job was added.
+
+## Reading a posting vs. storing it — the names differ
+
+`POST /api/parse` returns a *parsed posting*. `POST /api/jobs` stores a *job record*. They are different schemas. Translate every field:
+
+| `/api/parse` returns | → `/api/jobs` expects | Note |
+|---|---|---|
+| `title` | `role` | **Most common mistake.** There is no `title` field on a job. |
+| `company` | `company` | Same name. |
+| `salary_raw` | `salary` | Free text, e.g. `"$180k–$220k CAD"`. |
+| `body_md` | `raw_jd` | The full job description markdown. |
+| `source` | `source` | Same name. Also used for agency detection in `add` step 4.5. |
+| `source_url` | `source_url` | Same name. |
+| `location` | — | No `location` field on a job. Fold it into `role_details` or `my_notes`. |
+| `department` | — | No matching field. Fold into `role_details` if useful. |
+| `benefits` | — | An array. No matching field. Fold into `role_details` if useful. |
+
+There is no `salary_min` in the parse response — derive it from `salary_raw` yourself and send it as an integer.
+
+## POST /api/jobs — create a job
+
+`id`, `company`, and `role` are required; sending any of them empty returns 400. Everything else is optional.
+
+<!-- schema:createJobRequest -->
+
+| field | type | required | notes |
+|---|---|---|---|
+| `id` | string | **yes** | The slug from `add` step 6. |
+| `company` | string | **yes** | |
+| `role` | string | **yes** | The job title. Not `title`. |
+| `stage` | string | no | Defaults to empty. |
+| `verdict` | string | no | `green` / `yellow` / `red`. |
+| `salary` | string | no | Free text as written in the posting. |
+| `salary_min` | integer | no | Not a string. |
+| `remote` | string | no | |
+| `source` | string | no | |
+| `source_url` | string | no | |
+| `raw_jd` | string | no | Full JD markdown. |
+| `added` | string | no | `YYYY-MM-DD`. Defaults to today. |
+| `last_activity` | string | no | `YYYY-MM-DD`. Defaults to today. |
+| `fit_score` | integer | no | 1–10. Not a string, not a float. |
+| `summary` | string | no | |
+| `positives` | string | no | A JSON **string**, not an array: `"[\"a\",\"b\"]"`. |
+| `concerns` | string | no | Same: JSON-encoded string, not an array. |
+| `my_notes` | string | no | |
+| `company_values` | string | no | Same: JSON-encoded string of `[{name, description}]`. |
+| `networking` | string | no | e.g. `"Jane Doe – Senior Engineer"`. |
+| `role_details` | string | no | |
+
+## PATCH /api/jobs/&lt;id&gt; — update a job
+
+Send only the fields you are changing; omitted fields keep their current values. The job id goes in the URL, never in the body.
+
+<!-- schema:UpdateJobParams -->
+
+| field | type | notes |
+|---|---|---|
+| `role` | string | |
+| `stage` | string | |
+| `verdict` | string | |
+| `salary` | string | |
+| `salary_min` | integer | |
+| `remote` | string | |
+| `fit_score` | integer | |
+| `summary` | string | |
+| `positives` | string | JSON-encoded string. |
+| `concerns` | string | JSON-encoded string. |
+| `my_notes` | string | |
+| `company_values` | string | JSON-encoded string. |
+| `networking` | string | |
+| `role_details` | string | |
+
+`company` is not updatable. If you got it wrong, delete the job and recreate it.
+
+## PUT /api/profile — save the profile
+
+This is a full replace, not a merge: every field you omit is set to null. To change one field, GET the profile first, then resend every field you want to keep along with the changed one.
+
+A GET response can be sent straight back: `id`, `profile_hash`, and `updated_at` are accepted and ignored, so you don't have to strip them. They are server-owned — `profile_hash` is recomputed from `resume_md` on every write. Every *other* unknown field is still a 400, so a wrong name like `achievement_bank` will be caught.
+
+<!-- schema:profileRequest -->
+
+| field | type | required | notes |
+|---|---|---|---|
+| `resume_md` | string | **yes** | |
+| `cover_letter_sample` | string | no | |
+| `salary_min` | integer | no | |
+| `salary_max` | integer | no | |
+| `salary_target` | integer | no | |
+| `remote_pref` | string | no | `remote-only` / `hybrid-ok` / `open`. |
+| `location` | string | no | |
+| `industries` | string | no | |
+| `green_flags` | string | no | |
+| `red_flags` | string | no | |
+| `tech_prefs` | string | no | |
+| `writing_voice_md` | string | no | |
+| `achievements_md` | string | no | The achievement bank from `init` step 4. |
+| `career_notes_md` | string | no | The career story blocks from `init` step 1.5. |
+
+## POST /api/jobs/&lt;id&gt;/activity
+
+<!-- schema:createActivityRequest -->
+
+| field | type | required | notes |
+|---|---|---|---|
+| `action` | string | **yes** | |
+| `notes` | string | no | Plural. Not `note`. |
+| `date` | string | no | `YYYY-MM-DD`. Defaults to today. |
+
+## POST /api/jobs/&lt;id&gt;/artifacts
+
+<!-- schema:createArtifactRequest -->
+
+| field | type | required | notes |
+|---|---|---|---|
+| `type` | string | **yes** | `resume` / `cover-letter` / `prep`. |
+| `filepath` | string | **yes** | Absolute path. Not `path`. Must be inside `$OUTPUT_DIR`. |
+| `profile_hash` | string | **yes** | Copy `profile_hash` from `GET /api/profile`. |
+
+## POST /api/parse
+
+<!-- schema:parseRequest -->
+
+| field | type | required | notes |
+|---|---|---|---|
+| `url` | string | **yes** | Not `link`, not `source_url`. |
+
+Response fields are listed in the translation table above.
+
+> Maintaining this section: the field lists are checked against the Go request
+> structs by `TestCommandDocMatchesSchema` in `internal/api/contract_test.go`.
+> If you change an API struct, that test tells you which table to update.
+
+---
+
 ## /job-search init
 
-Set up your profile. Run this once.
+Set up your profile, or fill in the gaps in an existing one. Safe to re-run.
 
-1. Ask the user to paste their resume (markdown or plain text), or provide a file path. If a path, read it with the Read tool.
+0. **Load the existing profile first.** GET `$BASE_URL/api/profile`.
 
-1.5. **Career context — build the depth that makes tailoring work.** Once you have the resume, say:
+   - **404** — first run. Go to step 1 and ask everything.
+   - **200** — a profile exists. Build a list of which fields are already populated and which are null or empty. Then show the user where they stand and ask how to proceed, in one message:
+
+     > "You already have a profile. Here's what's set and what's missing:
+     >
+     > **Set:** resume, salary range, remote preference, location, ...
+     > **Missing:** achievement bank, career notes, writing voice
+     >
+     > Want me to (a) just fill in what's missing, (b) go through everything again, or (c) update
+     > specific fields — tell me which?"
+
+     Use the real field lists, not this example. Name the missing fields in plain language: `achievements_md` is "the achievement bank", `career_notes_md` is "the career story notes", `cover_letter_sample` is "a sample cover letter".
+
+   - **(a) fill gaps** — run only the steps below whose fields are currently null or empty. Skip the rest entirely; do not re-ask a question the profile already answers.
+   - **(b) redo everything** — run every step, but show the current value with each question so the user can say "keep" instead of retyping it.
+   - **(c) specific fields** — run only the steps for the fields they named.
+
+   In all three cases, carry the untouched values through to the PUT in step 5 unchanged. Skipping a question means keeping its current value, never nulling it.
+
+   Note for existing profiles: `achievements_md` and `career_notes_md` were silently dropped by the API before 2026-08-07. If a profile predates that and both are null, the user very likely did answer those questions and the answers were lost. Say so rather than implying they skipped them.
+
+1. Ask the user to paste their resume (markdown or plain text), or provide a file path. If a path, read it with the Read tool. On a re-run where `resume_md` is already set and the user chose (a), skip this and keep the stored resume; steps 1.5 and 3 below still read it.
+
+1.5. **Career context — build the depth that makes tailoring work.** Skip this step entirely if `career_notes_md` is already populated and the user chose (a). If you are filling a gap rather than running a first-time setup, drop "Before I ask the remaining profile questions" from the opening and say you're filling in the one missing piece. Once you have the resume, say:
 
    > "Got it. Before I ask the remaining profile questions, I'd like to get the story behind a few
    > of your strongest pieces of work. This is what the cover-letter command draws on for the
@@ -45,7 +212,7 @@ Set up your profile. Run this once.
    > I'll pick 2–3 things from your resume and ask about each one. Takes about 5–10 minutes.
    > Want to do this now, or skip and come back later?"
 
-   If they say skip (or later), set `career_notes_md` to null and continue to step 2.
+   If they say skip (or later), leave `career_notes_md` at its current value — null on a first run, unchanged on a re-run — and continue to step 2.
 
    If they say yes:
 
@@ -87,8 +254,8 @@ Set up your profile. Run this once.
 
    c. After covering all selected projects, compile the story blocks into `career_notes_md`.
 
-2. Ask: "Do you have a sample cover letter to upload? (optional)"
-3. Ask the following questions in sequence — don't batch them:
+2. Ask: "Do you have a sample cover letter to upload? (optional)" Skip if `cover_letter_sample` is already set and the user chose (a).
+3. Ask the following questions in sequence — don't batch them. Skip any whose field is already populated unless the user asked to redo it; when redoing, show the current value and accept "keep".
    - Desired salary range (number, in CAD unless otherwise specified)? Enter min and target.
    - Remote preference? (remote-only / hybrid-ok / open)
    - Location (city, country)?
@@ -97,7 +264,7 @@ Set up your profile. Run this once.
    - Green flags — what excites you in a role?
    - Red flags — deal-breakers?
    - Writing voice notes — anything specific about your cover letter style? (optional)
-4. Build the achievement bank conversationally. Say:
+4. Build the achievement bank conversationally. Skip this step entirely if `achievements_md` is already populated and the user chose (a). If you are filling a gap, drop "Last thing" from the opening. Say:
 
    > "Last thing: let's build a bank of achievement bullets the cover-letter command can pull from.
    > I'll ask about a few areas of your work — just describe what you did in rough terms and I'll
@@ -129,9 +296,13 @@ Set up your profile. Run this once.
    After all categories, compile the approved bullets into a markdown achievement bank organised
    by category heading. Set this as `achievements_md`.
 
-   If the user says 'skip' to all categories or 'skip' at the start, set `achievements_md` to null.
+   If the user says 'skip' to all categories or 'skip' at the start, leave `achievements_md` as it was — null on a first run, unchanged on a re-run. Never overwrite an existing bank with null.
 
-5. PUT to `$BASE_URL/api/profile` with `Content-Type: application/json`:
+5. PUT to `$BASE_URL/api/profile` with `Content-Type: application/json`. Field names are fixed — see **PUT /api/profile** in the API contract.
+
+   **The PUT replaces the whole profile, so build the body by merging, not by sending only what you collected this run.** Start from the profile you loaded in step 0, overwrite the fields the user just answered, and send the whole thing back. Anything the user skipped keeps the value it already had. You can leave `id`, `profile_hash`, and `updated_at` in the body; the server ignores them.
+
+   Send `achievements_md` and `career_notes_md` here; a profile saved without them leaves `resume` and `cover-letter` with nothing to draw on.
    ```json
    {
      "resume_md": "<resume text>",
@@ -151,7 +322,8 @@ Set up your profile. Run this once.
    }
    ```
    All fields except `resume_md` are optional (omit or null if not provided).
-6. Confirm: "Profile saved. Open http://localhost:8080 to see your board."
+6. Read the PUT response and confirm the fields you just collected came back non-null. If one came back null, the field name was wrong — check the API contract and resend rather than reporting success.
+7. Confirm: "Profile saved. Open http://localhost:8080 to see your board." On a gap-fill run, name what you added instead: "Profile updated — added your achievement bank and career notes."
 
 ---
 
@@ -186,6 +358,9 @@ Parse a job posting, evaluate fit, add to board.
    Ask all three in one message. Do not make the user wait through three separate turns.
 6. Generate a short, memorable slug ID: company name + the 2–3 most distinctive words from the role title, all lowercase, hyphen-separated, 3–5 words total. The user will type this ID in future commands, so make it easy to remember and short to type. Examples: `stripe-staff-swe`, `grafana-senior-backend`, `planhub-senior-php`, `temporal-swe-observability`. Do NOT append the full role title verbatim — distil it.
 7. POST to `$BASE_URL/api/jobs` with all fields.
+   - Use the **POST /api/jobs** table in the API contract for field names. The parsed posting's `title` goes in `role`, `salary_raw` goes in `salary`, `body_md` goes in `raw_jd` — translate every field before sending.
+   - `positives`, `concerns`, and `company_values` are JSON-encoded **strings**, not arrays.
+7.5. **Verify the write before moving on.** The POST returns the saved job. Check that `role`, `company`, `fit_score`, and `verdict` came back with the values you sent. If any is empty or wrong, PATCH `$BASE_URL/api/jobs/<id>` to correct it (see the PATCH table — `company` is not patchable, so delete and recreate if that is what's wrong). Do not report the job as added until the read-back matches.
 8. POST to `$BASE_URL/api/jobs/<id>/activity`: `{"action": "Evaluated", "notes": "Added via /job-search add"}`
 9. Confirm with the job ID clearly visible:
    > Added **<Company>** — <Role> · ID: `<slug-id>` · fitScore: <N>/10 <emoji>
@@ -309,10 +484,11 @@ Re-evaluate fit against the current profile. Use when: salary was revealed, prof
 1. GET `$BASE_URL/api/jobs/<job-id>`
 2. GET `$BASE_URL/api/profile`
 3. Re-run fit evaluation (same scoring rubric as `add`)
-4. PATCH `$BASE_URL/api/jobs/<job-id>`:
+4. PATCH `$BASE_URL/api/jobs/<job-id>` (see the PATCH table in the API contract; omitted fields keep their current values):
    ```json
    {"fit_score": <n>, "verdict": "<v>", "positives": "<json>", "concerns": "<json>", "summary": "<s>"}
    ```
+   The PATCH returns the updated job. Confirm `fit_score` and `verdict` came back as sent before reporting the new score.
 5. POST activity: `{"action": "Re-evaluated", "notes": "fitScore <old> → <new>"}`
 6. Confirm: "Re-evaluated: fitScore now <N>/10 <emoji>"
 
