@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -235,6 +236,59 @@ func TestPutProfile_RequiresResume(t *testing.T) {
 	require.NoError(t, json.NewDecoder(resp.Body).Decode(&profile))
 	assert.Equal(t, "# Simon", profile["resume_md"])
 	assert.Equal(t, "## Scale", profile["achievements_md"])
+}
+
+// Correcting a job's details must not make a stale application look freshly
+// worked on the board; logging real activity must.
+func TestLastActivity_MovesOnlyOnRealActivity(t *testing.T) {
+	ts, _ := newServer(t)
+
+	status, _ := postJSON(t, http.MethodPost, ts.URL+"/api/jobs",
+		`{"id":"acme-swe","company":"Acme Crop","role":"Staff Engineer","last_activity":"2026-01-15"}`)
+	require.Equal(t, http.StatusCreated, status)
+
+	lastActivity := func(t *testing.T) string {
+		t.Helper()
+
+		resp, err := http.Get(ts.URL + "/api/jobs/acme-swe") //nolint:noctx
+		require.NoError(t, err)
+
+		defer resp.Body.Close()
+
+		var job map[string]any
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&job))
+
+		activity, ok := job["last_activity"].(string)
+		require.True(t, ok)
+
+		return activity
+	}
+
+	require.Equal(t, "2026-01-15T00:00:00Z", lastActivity(t))
+
+	// A correction leaves the date alone.
+	status, body := postJSON(t, http.MethodPatch, ts.URL+"/api/jobs/acme-swe",
+		`{"company":"Acme","source_url":"https://boards.greenhouse.io/acme/1"}`)
+	require.Equal(t, http.StatusOK, status, body)
+	assert.Equal(t, "2026-01-15T00:00:00Z", lastActivity(t), "a correction is not activity")
+
+	// Logging activity moves it, using the entry's own date.
+	status, body = postJSON(t, http.MethodPost, ts.URL+"/api/jobs/acme-swe/activity",
+		`{"action":"Phone screen","date":"2026-02-20"}`)
+	require.Equal(t, http.StatusCreated, status, body)
+	assert.Equal(t, "2026-02-20T00:00:00Z", lastActivity(t), "logged activity moves the date")
+
+	// Dragging the card to a new column on the board is activity too.
+	form := url.Values{"stage": {"Applied"}}
+
+	resp, err := http.PostForm(ts.URL+"/panels/jobs/acme-swe/stage", form) //nolint:noctx
+	require.NoError(t, err)
+
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	today := time.Now().UTC().Format("2006-01-02") + "T00:00:00Z"
+	assert.Equal(t, today, lastActivity(t), "a board stage change moves the date")
 }
 
 func TestPutProfile_UnknownFieldRejected(t *testing.T) {

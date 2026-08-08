@@ -1,9 +1,12 @@
 package api
 
 import (
+	"context"
 	"database/sql"
 	"errors"
+	"log"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/sdroscher/job-search-pipeline/internal/db"
@@ -70,5 +73,19 @@ func (s *Server) handleCreateActivity(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	s.touchJob(r.Context(), id, date)
+
 	writeJSON(w, http.StatusCreated, entry)
+}
+
+// touchJob moves a job's last_activity to date. Logging activity is what makes
+// that date move; UpdateJob leaves it alone so corrections don't make a stale
+// application look freshly worked. Using the entry's own date means a
+// backdated entry doesn't claim the job was touched today. Best-effort: the
+// activity entry itself has already been written.
+func (s *Server) touchJob(ctx context.Context, jobID string, date time.Time) {
+	err := s.store.TouchJobActivity(ctx, db.TouchJobActivityParams{ID: jobID, LastActivity: date})
+	if err != nil {
+		log.Printf("touch last_activity failed: %v (id=%q)", err, jobID) //nolint:gosec
+	}
 }

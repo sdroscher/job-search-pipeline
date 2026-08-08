@@ -98,7 +98,7 @@ The board renders one column per active stage and groups the rest under closed. 
 
 Send only the fields you are changing; omitted fields keep their current values. The job id goes in the URL. Sending a different `id` in the body is a 400 — job ids are immutable.
 
-One field is not preserved: **every PATCH sets `last_activity` to today**, including a pure correction like fixing a typo in `company`. The board shows that date, so a two-week-old application will look like it was touched today. Mention it if the user might care.
+PATCH does not touch `last_activity`, so correcting a job's details won't make a stale application look freshly worked. That date moves when something actually happens: `POST /api/jobs/<id>/activity` sets it to the entry's date, and moving a card on the board sets it to today. If a PATCH represents real progress rather than a correction, log an activity entry alongside it.
 
 <!-- schema:UpdateJobParams -->
 
@@ -160,7 +160,7 @@ A GET response can be sent straight back: `id`, `profile_hash`, and `updated_at`
 |---|---|---|---|
 | `action` | string | **yes** | |
 | `notes` | string | no | Plural. Not `note`. |
-| `date` | string | no | `YYYY-MM-DD`. Defaults to today. |
+| `date` | string | no | `YYYY-MM-DD`. Defaults to today. Also becomes the job's `last_activity`, so backdate it if you are recording something that happened earlier. |
 
 ## POST /api/jobs/&lt;id&gt;/artifacts
 
