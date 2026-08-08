@@ -50,6 +50,22 @@ func (s *Server) handleProfileFormPost(w http.ResponseWriter, r *http.Request) {
 
 	hash := fmt.Sprintf("%x", sha256.Sum256([]byte(resumeMd)))
 
+	// The form has no inputs for achievements_md or career_notes_md, and
+	// UpsertProfile overwrites every column. Carry the existing values through
+	// so saving this page doesn't wipe what /job-search init collected.
+	var achievementsMd, careerNotesMd *string
+
+	existing, getErr := s.store.GetProfile(r.Context())
+	if getErr != nil && !errors.Is(getErr, sql.ErrNoRows) {
+		http.Error(w, getErr.Error(), http.StatusInternalServerError)
+
+		return
+	}
+
+	if getErr == nil {
+		achievementsMd, careerNotesMd = existing.AchievementsMd, existing.CareerNotesMd
+	}
+
 	_, upsertErr := s.store.UpsertProfile(r.Context(), db.UpsertProfileParams{
 		ResumeMd:          resumeMd,
 		CoverLetterSample: optString(r.FormValue("cover_letter_sample")),
@@ -63,6 +79,8 @@ func (s *Server) handleProfileFormPost(w http.ResponseWriter, r *http.Request) {
 		RedFlags:          optString(r.FormValue("red_flags")),
 		TechPrefs:         optString(r.FormValue("tech_prefs")),
 		WritingVoiceMd:    optString(r.FormValue("writing_voice_md")),
+		AchievementsMd:    achievementsMd,
+		CareerNotesMd:     careerNotesMd,
 		ProfileHash:       hash,
 	})
 	if upsertErr != nil {

@@ -5,8 +5,8 @@ SELECT * FROM user_profile WHERE id = 1;
 INSERT INTO user_profile (
   id, resume_md, cover_letter_sample, salary_min, salary_max, salary_target,
   remote_pref, location, industries, green_flags, red_flags, tech_prefs,
-  writing_voice_md, profile_hash, updated_at
-) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+  writing_voice_md, achievements_md, career_notes_md, profile_hash, updated_at
+) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
 ON CONFLICT(id) DO UPDATE SET
   resume_md = excluded.resume_md,
   cover_letter_sample = excluded.cover_letter_sample,
@@ -20,6 +20,8 @@ ON CONFLICT(id) DO UPDATE SET
   red_flags = excluded.red_flags,
   tech_prefs = excluded.tech_prefs,
   writing_voice_md = excluded.writing_voice_md,
+  achievements_md = excluded.achievements_md,
+  career_notes_md = excluded.career_notes_md,
   profile_hash = excluded.profile_hash,
   updated_at = CURRENT_TIMESTAMP
 RETURNING *;

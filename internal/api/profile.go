@@ -3,6 +3,7 @@ package api
 import (
 	"crypto/sha256"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -24,6 +25,17 @@ type profileRequest struct {
 	RedFlags          *string `json:"red_flags"`
 	TechPrefs         *string `json:"tech_prefs"`
 	WritingVoiceMd    *string `json:"writing_voice_md"`
+	AchievementsMd    *string `json:"achievements_md"`
+	CareerNotesMd     *string `json:"career_notes_md"`
+
+	// Server-owned fields, accepted and ignored. PUT replaces the whole
+	// profile, so changing one field means GET, edit, PUT the rest back — and
+	// a GET response carries these three. Rejecting them would fail the
+	// round trip that the merge in /job-search init step 5 depends on.
+	// profile_hash is always recomputed from resume_md below.
+	IgnoredID          json.RawMessage `json:"id"`
+	IgnoredProfileHash json.RawMessage `json:"profile_hash"`
+	IgnoredUpdatedAt   json.RawMessage `json:"updated_at"`
 }
 
 func (s *Server) handleGetProfile(w http.ResponseWriter, r *http.Request) {
@@ -68,6 +80,8 @@ func (s *Server) handlePutProfile(w http.ResponseWriter, r *http.Request) {
 		RedFlags:          req.RedFlags,
 		TechPrefs:         req.TechPrefs,
 		WritingVoiceMd:    req.WritingVoiceMd,
+		AchievementsMd:    req.AchievementsMd,
+		CareerNotesMd:     req.CareerNotesMd,
 		ProfileHash:       hash,
 	})
 	if err != nil {
