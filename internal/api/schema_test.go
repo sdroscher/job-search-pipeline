@@ -121,6 +121,51 @@ func TestUpdateJob_RoleAndRemote(t *testing.T) {
 	assert.Equal(t, "Acme", job["company"], "unset fields must be preserved")
 }
 
+// Every column a client can get wrong on create must be fixable in place.
+// DeleteJob is a soft delete that keeps the row, so "delete and recreate" is
+// not an available remedy: the id stays taken and the recreate 409s.
+func TestUpdateJob_AllCorrectableFields(t *testing.T) {
+	ts, _ := newServer(t)
+
+	status, _ := postJSON(t, http.MethodPost, ts.URL+"/api/jobs",
+		`{"id":"acme-swe","company":"Acme Crop","role":"Staff Engineer","source":"LinkedIn"}`)
+	require.Equal(t, http.StatusCreated, status)
+
+	status, body := postJSON(t, http.MethodPatch, ts.URL+"/api/jobs/acme-swe",
+		`{"company":"Acme","source":"Greenhouse","source_url":"https://boards.greenhouse.io/acme/1","raw_jd":"# Staff Engineer"}`)
+	require.Equal(t, http.StatusOK, status, body)
+
+	var job map[string]any
+	require.NoError(t, json.Unmarshal([]byte(body), &job))
+
+	assert.Equal(t, "Acme", job["company"])
+	assert.Equal(t, "Greenhouse", job["source"])
+	assert.Equal(t, "https://boards.greenhouse.io/acme/1", job["source_url"])
+	assert.Equal(t, "# Staff Engineer", job["raw_jd"])
+	assert.Equal(t, "Staff Engineer", job["role"], "unset fields must be preserved")
+}
+
+// Pins the soft-delete semantics the PATCH docs now warn about.
+func TestDeleteJob_KeepsIDTaken(t *testing.T) {
+	ts, _ := newServer(t)
+
+	status, _ := postJSON(t, http.MethodPost, ts.URL+"/api/jobs", validJobBody)
+	require.Equal(t, http.StatusCreated, status)
+
+	req, err := http.NewRequest(http.MethodDelete, ts.URL+"/api/jobs/acme-swe", nil) //nolint:noctx
+	require.NoError(t, err)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusNoContent, resp.StatusCode)
+
+	status, body := postJSON(t, http.MethodPost, ts.URL+"/api/jobs", validJobBody)
+	assert.Equal(t, http.StatusConflict, status)
+	assert.Contains(t, body, "already exists")
+}
+
 func TestPutProfile_UnknownFieldRejected(t *testing.T) {
 	ts, _ := newServer(t)
 

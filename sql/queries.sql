@@ -52,12 +52,16 @@ RETURNING *;
 
 -- name: UpdateJob :one
 UPDATE jobs SET
+  company       = COALESCE(sqlc.narg(company), company),
   role          = COALESCE(sqlc.narg(role), role),
   stage         = COALESCE(sqlc.narg(stage), stage),
   verdict       = COALESCE(sqlc.narg(verdict), verdict),
   salary        = COALESCE(sqlc.narg(salary), salary),
   salary_min    = COALESCE(sqlc.narg(salary_min), salary_min),
   remote        = COALESCE(sqlc.narg(remote), remote),
+  source        = COALESCE(sqlc.narg(source), source),
+  source_url    = COALESCE(sqlc.narg(source_url), source_url),
+  raw_jd        = COALESCE(sqlc.narg(raw_jd), raw_jd),
   fit_score     = COALESCE(sqlc.narg(fit_score), fit_score),
   summary       = COALESCE(sqlc.narg(summary), summary),
   positives     = COALESCE(sqlc.narg(positives), positives),

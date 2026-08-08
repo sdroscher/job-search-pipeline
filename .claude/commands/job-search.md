@@ -95,12 +95,16 @@ Send only the fields you are changing; omitted fields keep their current values.
 
 | field | type | notes |
 |---|---|---|
+| `company` | string | |
 | `role` | string | |
 | `stage` | string | |
 | `verdict` | string | |
 | `salary` | string | |
 | `salary_min` | integer | |
 | `remote` | string | |
+| `source` | string | |
+| `source_url` | string | Use this if the direct ATS listing turns up after the job was added from an aggregator. |
+| `raw_jd` | string | |
 | `fit_score` | integer | |
 | `summary` | string | |
 | `positives` | string | JSON-encoded string. |
@@ -110,7 +114,7 @@ Send only the fields you are changing; omitted fields keep their current values.
 | `networking` | string | |
 | `role_details` | string | |
 
-`company` is not updatable. If you got it wrong, delete the job and recreate it.
+Every field above is fixable in place, so PATCH rather than recreating. **`id` cannot be changed, and `DELETE /api/jobs/<id>` is a soft delete** — it moves the job to the "Won't Apply" stage and keeps the row, so the id stays taken and a recreate returns `409`. If the id itself is wrong, tell the user; don't try to work around it.
 
 ## PUT /api/profile — save the profile
 
@@ -360,7 +364,7 @@ Parse a job posting, evaluate fit, add to board.
 7. POST to `$BASE_URL/api/jobs` with all fields.
    - Use the **POST /api/jobs** table in the API contract for field names. The parsed posting's `title` goes in `role`, `salary_raw` goes in `salary`, `body_md` goes in `raw_jd` — translate every field before sending.
    - `positives`, `concerns`, and `company_values` are JSON-encoded **strings**, not arrays.
-7.5. **Verify the write before moving on.** The POST returns the saved job. Check that `role`, `company`, `fit_score`, and `verdict` came back with the values you sent. If any is empty or wrong, PATCH `$BASE_URL/api/jobs/<id>` to correct it (see the PATCH table — `company` is not patchable, so delete and recreate if that is what's wrong). Do not report the job as added until the read-back matches.
+7.5. **Verify the write before moving on.** The POST returns the saved job. Check that `role`, `company`, `fit_score`, and `verdict` came back with the values you sent. If any is empty or wrong, PATCH `$BASE_URL/api/jobs/<id>` to correct it. Do not report the job as added until the read-back matches.
 8. POST to `$BASE_URL/api/jobs/<id>/activity`: `{"action": "Evaluated", "notes": "Added via /job-search add"}`
 9. Confirm with the job ID clearly visible:
    > Added **<Company>** — <Role> · ID: `<slug-id>` · fitScore: <N>/10 <emoji>
