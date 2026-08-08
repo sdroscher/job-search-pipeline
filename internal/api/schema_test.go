@@ -166,6 +166,77 @@ func TestDeleteJob_KeepsIDTaken(t *testing.T) {
 	assert.Contains(t, body, "already exists")
 }
 
+// An omitted stage must not store "", which puts the job in no board column:
+// present over the API, invisible in the UI.
+func TestCreateJob_DefaultsStageAndVerdict(t *testing.T) {
+	ts, _ := newServer(t)
+
+	status, body := postJSON(t, http.MethodPost, ts.URL+"/api/jobs", validJobBody)
+	require.Equal(t, http.StatusCreated, status, body)
+
+	var job map[string]any
+	require.NoError(t, json.Unmarshal([]byte(body), &job))
+
+	assert.Equal(t, "Evaluated", job["stage"])
+	assert.Equal(t, "yellow", job["verdict"])
+
+	// An explicit value still wins.
+	status, body = postJSON(t, http.MethodPost, ts.URL+"/api/jobs",
+		`{"id":"b","company":"B","role":"Eng","stage":"Applied","verdict":"green"}`)
+	require.Equal(t, http.StatusCreated, status)
+	require.NoError(t, json.Unmarshal([]byte(body), &job))
+	assert.Equal(t, "Applied", job["stage"])
+	assert.Equal(t, "green", job["verdict"])
+}
+
+// UpdateJobParams has an ID field, so "id" in the body decodes instead of
+// being rejected as unknown. Renaming a job that way must not report success.
+func TestUpdateJob_RejectsMismatchedIDInBody(t *testing.T) {
+	ts, _ := newServer(t)
+
+	status, _ := postJSON(t, http.MethodPost, ts.URL+"/api/jobs", validJobBody)
+	require.Equal(t, http.StatusCreated, status)
+
+	status, body := postJSON(t, http.MethodPatch, ts.URL+"/api/jobs/acme-swe",
+		`{"id":"acme-staff-swe"}`)
+	assert.Equal(t, http.StatusBadRequest, status)
+	assert.Contains(t, body, "id cannot be changed")
+
+	// Echoing the path id back is fine, so a read-modify-write still works.
+	status, body = postJSON(t, http.MethodPatch, ts.URL+"/api/jobs/acme-swe",
+		`{"id":"acme-swe","stage":"Applied"}`)
+	require.Equal(t, http.StatusOK, status, body)
+
+	var job map[string]any
+	require.NoError(t, json.Unmarshal([]byte(body), &job))
+	assert.Equal(t, "Applied", job["stage"])
+}
+
+// A partial PUT would blank the resume and rehash to sha256(""), marking every
+// artifact stale.
+func TestPutProfile_RequiresResume(t *testing.T) {
+	ts, _ := newServer(t)
+
+	status, _ := postJSON(t, http.MethodPut, ts.URL+"/api/profile",
+		`{"resume_md":"# Simon","achievements_md":"## Scale"}`)
+	require.Equal(t, http.StatusOK, status)
+
+	status, body := postJSON(t, http.MethodPut, ts.URL+"/api/profile", `{"location":"Vancouver"}`)
+	assert.Equal(t, http.StatusBadRequest, status)
+	assert.Contains(t, body, "resume_md")
+
+	// The stored profile is untouched.
+	resp, err := http.Get(ts.URL + "/api/profile") //nolint:noctx
+	require.NoError(t, err)
+
+	defer resp.Body.Close()
+
+	var profile map[string]any
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&profile))
+	assert.Equal(t, "# Simon", profile["resume_md"])
+	assert.Equal(t, "## Scale", profile["achievements_md"])
+}
+
 func TestPutProfile_UnknownFieldRejected(t *testing.T) {
 	ts, _ := newServer(t)
 

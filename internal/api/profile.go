@@ -65,6 +65,15 @@ func (s *Server) handlePutProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// PUT replaces the whole profile, so a body without resume_md would blank
+	// the resume and rehash to sha256(""), marking every artifact stale. The
+	// HTML form already rejects this; the JSON API has to as well.
+	if req.ResumeMd == "" {
+		http.Error(w, "missing required field(s): resume_md", http.StatusBadRequest)
+
+		return
+	}
+
 	hash := fmt.Sprintf("%x", sha256.Sum256([]byte(req.ResumeMd)))
 
 	profile, err := s.store.UpsertProfile(r.Context(), db.UpsertProfileParams{

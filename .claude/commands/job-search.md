@@ -68,8 +68,8 @@ There is no `salary_min` in the parse response — derive it from `salary_raw` y
 | `id` | string | **yes** | The slug from `add` step 6. |
 | `company` | string | **yes** | |
 | `role` | string | **yes** | The job title. Not `title`. |
-| `stage` | string | no | Defaults to empty. |
-| `verdict` | string | no | `green` / `yellow` / `red`. |
+| `stage` | string | no | Defaults to `Evaluated`. Must be one of the stage values below — an unrecognised stage puts the job in no board column. |
+| `verdict` | string | no | `green` / `yellow` / `red`. Defaults to `yellow`. |
 | `salary` | string | no | Free text as written in the posting. |
 | `salary_min` | integer | no | Not a string. |
 | `remote` | string | no | |
@@ -87,9 +87,18 @@ There is no `salary_min` in the parse response — derive it from `salary_raw` y
 | `networking` | string | no | e.g. `"Jane Doe – Senior Engineer"`. |
 | `role_details` | string | no | |
 
+### Stage values
+
+The board renders one column per active stage and groups the rest under closed. A `stage` outside these lists is stored but appears nowhere in the UI, so never invent one.
+
+**Active:** `Evaluated`, `Applied`, `AI Assessment`, `Screening`, `Interviewing`, `Final Round`, `Offer`
+**Closed:** `Rejected`, `Listing Withdrawn`, `Declined`, `Won't Apply`
+
 ## PATCH /api/jobs/&lt;id&gt; — update a job
 
-Send only the fields you are changing; omitted fields keep their current values. The job id goes in the URL, never in the body.
+Send only the fields you are changing; omitted fields keep their current values. The job id goes in the URL. Sending a different `id` in the body is a 400 — job ids are immutable.
+
+One field is not preserved: **every PATCH sets `last_activity` to today**, including a pure correction like fixing a typo in `company`. The board shows that date, so a two-week-old application will look like it was touched today. Mention it if the user might care.
 
 <!-- schema:UpdateJobParams -->
 
@@ -119,6 +128,8 @@ Every field above is fixable in place, so PATCH rather than recreating. **`id` c
 ## PUT /api/profile — save the profile
 
 This is a full replace, not a merge: every field you omit is set to null. To change one field, GET the profile first, then resend every field you want to keep along with the changed one.
+
+`resume_md` is required on every write, including a one-field update — a body without it is a 400 rather than a blanked resume.
 
 A GET response can be sent straight back: `id`, `profile_hash`, and `updated_at` are accepted and ignored, so you don't have to strip them. They are server-owned — `profile_hash` is recomputed from `resume_md` on every write. Every *other* unknown field is still a 400, so a wrong name like `achievement_bank` will be caught.
 

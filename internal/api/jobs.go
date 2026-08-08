@@ -18,6 +18,15 @@ import (
 // paramID is the job id, taken from the URL path on every /api/jobs/{id} route.
 const paramID = "id"
 
+// Column defaults for jobs. The schema declares these as DEFAULT values, but
+// create always supplies the column explicitly, so an omitted stage would
+// otherwise store "" — a job in no board column at all, visible over the API
+// but not in the UI.
+const (
+	defaultStage   = "Evaluated"
+	defaultVerdict = "yellow"
+)
+
 // errMissingFields is returned when a create request omits a required field.
 var errMissingFields = errors.New("missing required field(s)")
 
@@ -119,12 +128,22 @@ func (req createJobRequest) toParams() (db.CreateJobParams, error) {
 		return db.CreateJobParams{}, fmt.Errorf("invalid last_activity date: %w", err)
 	}
 
+	stage := req.Stage
+	if stage == "" {
+		stage = defaultStage
+	}
+
+	verdict := req.Verdict
+	if verdict == "" {
+		verdict = defaultVerdict
+	}
+
 	return db.CreateJobParams{
 		ID:            req.ID,
 		Company:       req.Company,
 		Role:          req.Role,
-		Stage:         req.Stage,
-		Verdict:       req.Verdict,
+		Stage:         stage,
+		Verdict:       verdict,
 		Salary:        req.Salary,
 		SalaryMin:     req.SalaryMin,
 		Remote:        req.Remote,
@@ -227,6 +246,17 @@ func (s *Server) handleUpdateJob(w http.ResponseWriter, r *http.Request) {
 	err := readJSON(r, &params)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+
+		return
+	}
+
+	// UpdateJobParams carries an ID field, so "id" in the body decodes rather
+	// than being caught by DisallowUnknownFields. A client trying to rename a
+	// job that way would get a 200 and no change. Echoing back the path id is
+	// harmless; anything else is a mistake worth reporting. Job ids are
+	// immutable.
+	if params.ID != "" && params.ID != id {
+		http.Error(w, "id cannot be changed; it is taken from the URL path", http.StatusBadRequest)
 
 		return
 	}
