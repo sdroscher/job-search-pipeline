@@ -7,11 +7,26 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/sdroscher/job-search-pipeline/internal/db"
 	"github.com/sdroscher/job-search-pipeline/internal/ui"
 )
+
+// touch records that a job moved stage today. UpdateJob no longer bumps
+// last_activity, so that a correction to a job's details doesn't make a stale
+// application look freshly worked. Best-effort: the stage change itself has
+// already succeeded.
+func (h *JobPanelHandler) touch(ctx context.Context, jobID string) {
+	err := h.store.TouchJobActivity(ctx, db.TouchJobActivityParams{
+		ID:           jobID,
+		LastActivity: time.Now().UTC().Truncate(24 * time.Hour),
+	})
+	if err != nil {
+		log.Printf("touch last_activity failed: %v (id=%q)", err, jobID) //nolint:gosec
+	}
+}
 
 func parseStrings(s *string) []string {
 	if s == nil {
@@ -137,6 +152,8 @@ func (h *JobPanelHandler) HandleUpdateStage(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	h.touch(r.Context(), id)
+
 	// Return updated column HTML so HTMX can swap it in.
 	jobs, err := h.store.ListJobs(r.Context())
 	if err != nil {
@@ -198,6 +215,8 @@ func (h *JobPanelHandler) HandleCloseJob(w http.ResponseWriter, r *http.Request)
 
 		return
 	}
+
+	h.touch(ctx, jobID)
 
 	colData, err := h.buildCloseJobData(ctx)
 	if err != nil {

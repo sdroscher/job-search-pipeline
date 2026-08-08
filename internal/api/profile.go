@@ -3,6 +3,7 @@ package api
 import (
 	"crypto/sha256"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -24,6 +25,17 @@ type profileRequest struct {
 	RedFlags          *string `json:"red_flags"`
 	TechPrefs         *string `json:"tech_prefs"`
 	WritingVoiceMd    *string `json:"writing_voice_md"`
+	AchievementsMd    *string `json:"achievements_md"`
+	CareerNotesMd     *string `json:"career_notes_md"`
+
+	// Server-owned fields, accepted and ignored. PUT replaces the whole
+	// profile, so changing one field means GET, edit, PUT the rest back — and
+	// a GET response carries these three. Rejecting them would fail the
+	// round trip that the merge in /job-search init step 5 depends on.
+	// profile_hash is always recomputed from resume_md below.
+	IgnoredID          json.RawMessage `json:"id"`
+	IgnoredProfileHash json.RawMessage `json:"profile_hash"`
+	IgnoredUpdatedAt   json.RawMessage `json:"updated_at"`
 }
 
 func (s *Server) handleGetProfile(w http.ResponseWriter, r *http.Request) {
@@ -53,6 +65,15 @@ func (s *Server) handlePutProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// PUT replaces the whole profile, so a body without resume_md would blank
+	// the resume and rehash to sha256(""), marking every artifact stale. The
+	// HTML form already rejects this; the JSON API has to as well.
+	if req.ResumeMd == "" {
+		http.Error(w, "missing required field(s): resume_md", http.StatusBadRequest)
+
+		return
+	}
+
 	hash := fmt.Sprintf("%x", sha256.Sum256([]byte(req.ResumeMd)))
 
 	profile, err := s.store.UpsertProfile(r.Context(), db.UpsertProfileParams{
@@ -68,6 +89,8 @@ func (s *Server) handlePutProfile(w http.ResponseWriter, r *http.Request) {
 		RedFlags:          req.RedFlags,
 		TechPrefs:         req.TechPrefs,
 		WritingVoiceMd:    req.WritingVoiceMd,
+		AchievementsMd:    req.AchievementsMd,
+		CareerNotesMd:     req.CareerNotesMd,
 		ProfileHash:       hash,
 	})
 	if err != nil {

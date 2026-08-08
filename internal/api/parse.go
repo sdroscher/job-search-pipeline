@@ -15,7 +15,7 @@ func (*Server) handleParse(w http.ResponseWriter, r *http.Request) {
 
 	err := readJSON(r, &req)
 	if err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
+		http.Error(w, "invalid request body: "+err.Error(), http.StatusBadRequest)
 
 		return
 	}

@@ -5,8 +5,8 @@ SELECT * FROM user_profile WHERE id = 1;
 INSERT INTO user_profile (
   id, resume_md, cover_letter_sample, salary_min, salary_max, salary_target,
   remote_pref, location, industries, green_flags, red_flags, tech_prefs,
-  writing_voice_md, profile_hash, updated_at
-) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+  writing_voice_md, achievements_md, career_notes_md, profile_hash, updated_at
+) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
 ON CONFLICT(id) DO UPDATE SET
   resume_md = excluded.resume_md,
   cover_letter_sample = excluded.cover_letter_sample,
@@ -20,6 +20,8 @@ ON CONFLICT(id) DO UPDATE SET
   red_flags = excluded.red_flags,
   tech_prefs = excluded.tech_prefs,
   writing_voice_md = excluded.writing_voice_md,
+  achievements_md = excluded.achievements_md,
+  career_notes_md = excluded.career_notes_md,
   profile_hash = excluded.profile_hash,
   updated_at = CURRENT_TIMESTAMP
 RETURNING *;
@@ -50,10 +52,16 @@ RETURNING *;
 
 -- name: UpdateJob :one
 UPDATE jobs SET
+  company       = COALESCE(sqlc.narg(company), company),
+  role          = COALESCE(sqlc.narg(role), role),
   stage         = COALESCE(sqlc.narg(stage), stage),
   verdict       = COALESCE(sqlc.narg(verdict), verdict),
   salary        = COALESCE(sqlc.narg(salary), salary),
   salary_min    = COALESCE(sqlc.narg(salary_min), salary_min),
+  remote        = COALESCE(sqlc.narg(remote), remote),
+  source        = COALESCE(sqlc.narg(source), source),
+  source_url    = COALESCE(sqlc.narg(source_url), source_url),
+  raw_jd        = COALESCE(sqlc.narg(raw_jd), raw_jd),
   fit_score     = COALESCE(sqlc.narg(fit_score), fit_score),
   summary       = COALESCE(sqlc.narg(summary), summary),
   positives     = COALESCE(sqlc.narg(positives), positives),
@@ -62,10 +70,18 @@ UPDATE jobs SET
   company_values = COALESCE(sqlc.narg(company_values), company_values),
   networking     = COALESCE(sqlc.narg(networking), networking),
   role_details   = COALESCE(sqlc.narg(role_details), role_details),
-  last_activity  = CURRENT_DATE,
   updated_at    = CURRENT_TIMESTAMP
 WHERE id = sqlc.arg(id)
 RETURNING *;
+
+-- name: TouchJobActivity :exec
+-- Records that something actually happened to a job. UpdateJob deliberately
+-- leaves last_activity alone so corrections don't make a stale application
+-- look fresh on the board.
+UPDATE jobs SET
+  last_activity = sqlc.arg(last_activity),
+  updated_at    = CURRENT_TIMESTAMP
+WHERE id = sqlc.arg(id);
 
 -- name: DeleteJob :exec
 UPDATE jobs SET stage = 'Won''t Apply', updated_at = CURRENT_TIMESTAMP WHERE id = ?;
